@@ -1,37 +1,46 @@
-# Coverage ignore file - Focus on testable packages only
-# This file defines which packages should be excluded from coverage reports
+# Coverage configuration file
+# This file defines which functions should be excluded from coverage reports
 
-# Main entry points (untestable)
-cmd/api/main.go
-cmd/seeder/main.go
+# Exclude adapter functions (simple pass-through functions)
+internal/service/auth.go:NewUserRepositoryAdapter
+internal/service/auth.go:UserRepositoryAdapter.GetByEmail
+internal/service/auth.go:UserRepositoryAdapter.GetByUsername
+internal/service/auth.go:UserRepositoryAdapter.GetByID
+internal/service/auth.go:UserRepositoryAdapter.Create
+internal/service/auth.go:NewCacheAdapter
+internal/service/auth.go:CacheAdapter.SetSession
+internal/service/auth.go:CacheAdapter.DeleteSession
+internal/service/auth.go:CacheAdapter.IsBlacklisted
+internal/service/auth.go:CacheAdapter.AddToBlacklist
+internal/service/auth.go:NewAuthMiddlewareAdapter
+internal/service/auth.go:AuthMiddlewareAdapter.GenerateToken
+internal/service/auth.go:AuthMiddlewareAdapter.ValidateToken
 
-# Generated documentation
-docs/docs.go
+# Exclude other adapter functions
+internal/service/band.go:NewBandRepositoryAdapter
+internal/service/band.go:BandRepositoryAdapter.*
+internal/service/band.go:NewUserRepositoryForBandAdapter
+internal/service/band.go:UserRepositoryForBandAdapter.*
+internal/service/band.go:NewS3ClientForBandAdapter
+internal/service/band.go:S3ClientForBandAdapter.*
 
-# Server setup and routing (integration test territory)
-cmd/api/server/routes.go
-cmd/api/server/server.go
-cmd/api/server/dependencies.go
+internal/service/follow.go:NewFollowRepositoryAdapter
+internal/service/follow.go:FollowRepositoryAdapter.*
+internal/service/follow.go:NewUserRepositoryForFollowAdapter
+internal/service/follow.go:UserRepositoryForFollowAdapter.*
+internal/service/follow.go:NewBandRepositoryForFollowAdapter
+internal/service/follow.go:BandRepositoryForFollowAdapter.*
 
-# Database connection and infrastructure (integration test territory)
-internal/db/postgres.go
+internal/service/post.go:NewPostRepositoryAdapter
+internal/service/post.go:PostRepositoryAdapter.*
+internal/service/post.go:NewUserRepositoryForPostAdapter
+internal/service/post.go:UserRepositoryForPostAdapter.*
+internal/service/post.go:NewBandRepositoryForPostAdapter
+internal/service/post.go:BandRepositoryForPostAdapter.*
+internal/service/post.go:NewS3ClientForPostAdapter
+internal/service/post.go:S3ClientForPostAdapter.*
 
-# Repository layer (integration test territory - requires database)
-internal/repository/*.go
-
-# Handlers (integration test territory - requires HTTP context)
-internal/handlers/*.go
-
-# External service clients (integration test territory)
-internal/cache/redis.go
-internal/storage/s3.go
-
-# Seeder (one-time setup script)
-internal/seeder/seeder.go
-
-# Focus on these testable packages:
-# - pkg/utils/ (pure functions)
-# - internal/service/ (business logic)
-# - internal/models/ (data structures)
-# - internal/config/ (configuration)
-# - internal/middleware/ (HTTP middleware)
+internal/service/user.go:NewUserRepositoryExtendedAdapter
+internal/service/user.go:UserRepositoryExtendedAdapter.*
+internal/service/user.go:NewS3ClientAdapter
+internal/service/user.go:S3ClientAdapter.*

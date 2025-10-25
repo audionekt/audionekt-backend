@@ -35,6 +35,197 @@ func TestValidator(t *testing.T) {
 	}
 }
 
+func TestValidateStruct(t *testing.T) {
+	v := validation.New()
+	
+	// Test struct validation
+	type TestStruct struct {
+		Username string `validate:"required,username"`
+		Email    string `validate:"required,email"`
+		Password string `validate:"required,password"`
+	}
+	
+	// Test valid struct
+	validStruct := TestStruct{
+		Username: "testuser123",
+		Email:    "test@example.com",
+		Password: "ValidPass123!",
+	}
+	
+	if err := v.ValidateStruct(validStruct); err != nil {
+		t.Errorf("Expected valid struct to pass validation: %v", err)
+	}
+	
+	// Test invalid struct
+	invalidStruct := TestStruct{
+		Username: "ab", // too short
+		Email:    "invalid-email",
+		Password: "weak", // doesn't meet password requirements
+	}
+	
+	if err := v.ValidateStruct(invalidStruct); err == nil {
+		t.Error("Expected invalid struct to fail validation")
+	}
+}
+
+func TestValidateRequest(t *testing.T) {
+	v := validation.New()
+	
+	// Test valid request struct
+	type ValidRequest struct {
+		Username string `validate:"required,username"`
+		Email    string `validate:"required,email"`
+		Password string `validate:"required,password"`
+	}
+	
+	validRequest := ValidRequest{
+		Username: "testuser123",
+		Email:    "test@example.com",
+		Password: "ValidPass123!",
+	}
+	
+	if err := validation.ValidateRequest(v, validRequest); err != nil {
+		t.Errorf("Expected valid request to pass validation: %v", err)
+	}
+	
+	// Test invalid request struct
+	type InvalidRequest struct {
+		Username string `validate:"required,username"`
+		Email    string `validate:"required,email"`
+		Password string `validate:"required,password"`
+	}
+	
+	invalidRequest := InvalidRequest{
+		Username: "ab", // too short
+		Email:    "invalid-email",
+		Password: "weak", // doesn't meet password requirements
+	}
+	
+	if err := validation.ValidateRequest(v, invalidRequest); err == nil {
+		t.Error("Expected invalid request to fail validation")
+	}
+}
+
+func TestGetValidationErrorsComprehensive(t *testing.T) {
+	v := validation.New()
+	
+	// Test with comprehensive validation errors to cover getValidationMessage
+	type TestStruct struct {
+		Username    string  `validate:"required,username"`
+		Email       string  `validate:"required,email"`
+		Password    string  `validate:"required,password"`
+		Age         int     `validate:"min=18,max=100"`
+		Latitude    float64 `validate:"latitude"`
+		Longitude   float64 `validate:"longitude"`
+		URL         string  `validate:"url"`
+		InstagramHandle string `validate:"instagram_handle"`
+	}
+	
+	invalidStruct := TestStruct{
+		Username:    "ab", // too short
+		Email:       "invalid-email",
+		Password:    "weak", // doesn't meet requirements
+		Age:         15, // too young
+		Latitude:    91.0, // invalid latitude
+		Longitude:   181.0, // invalid longitude
+		URL:         "not-a-url",
+		InstagramHandle: "user-name", // invalid characters
+	}
+	
+	err := v.ValidateStruct(invalidStruct)
+	if err == nil {
+		t.Error("Expected validation to fail")
+	}
+	
+	// Test GetValidationErrors
+	errors := validation.GetValidationErrors(err)
+	if errors == nil {
+		t.Error("Expected validation errors to be returned")
+	}
+	
+	if len(errors) == 0 {
+		t.Error("Expected validation errors to contain field errors")
+	}
+	
+	// Check that we have multiple error types
+	errorTags := make(map[string]bool)
+	for _, validationErr := range errors {
+		errorTags[validationErr.Tag] = true
+	}
+	
+	// Test with nil error
+	nilErrors := validation.GetValidationErrors(nil)
+	if nilErrors != nil {
+		t.Error("Expected nil errors to return nil")
+	}
+}
+
+func TestURLValidation(t *testing.T) {
+	v := validation.New()
+	
+	// Test valid URLs
+	validURLs := []string{
+		"https://example.com",
+		"http://example.com",
+		"https://www.example.com/path",
+		"https://example.com:8080/path?query=value",
+		"", // empty URL is allowed (optional field)
+	}
+	
+	for _, url := range validURLs {
+		if err := v.ValidateVar(url, "url"); err != nil {
+			t.Errorf("Expected valid URL '%s' to pass validation: %v", url, err)
+		}
+	}
+	
+	// Test invalid URLs
+	invalidURLs := []string{
+		"not-a-url",
+		"ftp://example.com", // unsupported protocol
+		"example.com", // missing protocol
+	}
+	
+	for _, url := range invalidURLs {
+		if err := v.ValidateVar(url, "url"); err == nil {
+			t.Errorf("Expected invalid URL '%s' to fail validation", url)
+		}
+	}
+}
+
+func TestInstagramHandleValidation(t *testing.T) {
+	v := validation.New()
+	
+	// Test valid Instagram handles
+	validHandles := []string{
+		"username",
+		"user_name",
+		"user.name",
+		"user123",
+		"", // empty handle is allowed (optional field)
+		"ab", // minimum length
+		"verylongusername123456789", // 25 chars, within limit
+	}
+	
+	for _, handle := range validHandles {
+		if err := v.ValidateVar(handle, "instagram_handle"); err != nil {
+			t.Errorf("Expected valid Instagram handle '%s' to pass validation: %v", handle, err)
+		}
+	}
+	
+	// Test invalid Instagram handles
+	invalidHandles := []string{
+		"user-name", // contains hyphen
+		"user@name", // contains @
+		"user name", // contains space
+	}
+	
+	for _, handle := range invalidHandles {
+		if err := v.ValidateVar(handle, "instagram_handle"); err == nil {
+			t.Errorf("Expected invalid Instagram handle '%s' to fail validation", handle)
+		}
+	}
+}
+
 func TestPasswordValidation(t *testing.T) {
 	v := validation.New()
 	

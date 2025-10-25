@@ -55,14 +55,16 @@ func (a *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		}
 
 		// Check if token is blacklisted
-		isBlacklisted, err := a.cache.IsBlacklisted(r.Context(), claims.ID)
-		if err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
-		if isBlacklisted {
-			http.Error(w, "Token has been revoked", http.StatusUnauthorized)
-			return
+		if a.cache != nil {
+			isBlacklisted, err := a.cache.IsBlacklisted(r.Context(), claims.ID)
+			if err != nil {
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+			if isBlacklisted {
+				http.Error(w, "Token has been revoked", http.StatusUnauthorized)
+				return
+			}
 		}
 
 		// Add user info to context

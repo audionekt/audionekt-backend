@@ -24,7 +24,7 @@ func TestAuthMiddleware_RequireAuth_ValidToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create middleware
-			middleware := NewAuthMiddleware("test-secret-key", &cache.Cache{})
+			middleware := NewAuthMiddleware([]byte("test-secret-key"), &cache.Cache{})
 
 			// Create a test handler
 			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -55,19 +55,19 @@ func TestAuthMiddleware_RequireAuth_ValidToken(t *testing.T) {
 func TestAuthMiddleware_ValidateToken_MoreEdgeCases(t *testing.T) {
 	tests := []struct {
 		name        string
-		jwtSecret   string
+		jwtSecret   []byte
 		tokenString string
 		expectError bool
 	}{
 		{
 			name:        "token with invalid signature",
-			jwtSecret:   "test-secret-key",
+			jwtSecret:   []byte("test-secret-key"),
 			tokenString: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
 			expectError: true,
 		},
 		{
 			name:        "token with wrong algorithm",
-			jwtSecret:   "test-secret-key",
+			jwtSecret:   []byte("test-secret-key"),
 			tokenString: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.EkN-DOsnsuRjRO6BxXemmJDm3HbxrbRzXglbN2S4sOkopdU4IsDxTI8jO19W_A4K8ZPJijNLis4EZsHeY559a4DFOd50_OqgH58ERTq8y0VqWHF6I6t0ZOu4KX8QGN_px5-FIHai_JQ1w3NO-4PzgpUM81sk62Rra_DzG_QN10",
 			expectError: true,
 		},

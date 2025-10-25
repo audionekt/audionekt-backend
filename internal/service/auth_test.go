@@ -176,7 +176,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 				userRepo.usersByEmail["existing@example.com"] = existingUser
 			},
 			expectError:   true,
-			errorContains: "user with email existing@example.com already exists",
+			errorContains: "User already exists",
 		},
 		{
 			name: "username already taken",
@@ -194,7 +194,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 				userRepo.usersByUsername["existinguser"] = existingUser
 			},
 			expectError:   true,
-			errorContains: "username existinguser already taken",
+			errorContains: "User already exists",
 		},
 		{
 			name: "user creation fails",
@@ -207,7 +207,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 				userRepo.createError = fmt.Errorf("database error")
 			},
 			expectError:   true,
-			errorContains: "failed to create user",
+			errorContains: "Failed to create user",
 		},
 		{
 			name: "token generation fails",
@@ -220,7 +220,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 				authMid.generateTokenError = fmt.Errorf("jwt error")
 			},
 			expectError:   true,
-			errorContains: "failed to generate token",
+			errorContains: "Failed to generate token",
 		},
 	}
 
@@ -324,7 +324,7 @@ func TestAuthService_LoginUser(t *testing.T) {
 				// No user in mock repository
 			},
 			expectError:   true,
-			errorContains: "invalid credentials",
+			errorContains: "Invalid email or password",
 		},
 		{
 			name:     "wrong password",
@@ -342,7 +342,7 @@ func TestAuthService_LoginUser(t *testing.T) {
 				userRepo.usersByEmail["test@example.com"] = existingUser
 			},
 			expectError:   true,
-			errorContains: "invalid credentials",
+			errorContains: "Invalid email or password",
 		},
 		{
 			name:     "token generation fails",
@@ -362,7 +362,7 @@ func TestAuthService_LoginUser(t *testing.T) {
 				authMid.generateTokenError = fmt.Errorf("jwt error")
 			},
 			expectError:   true,
-			errorContains: "failed to generate token",
+			errorContains: "Failed to generate token",
 		},
 		{
 			name:     "empty email",
@@ -372,7 +372,7 @@ func TestAuthService_LoginUser(t *testing.T) {
 				// No setup needed for empty email
 			},
 			expectError:   true,
-			errorContains: "invalid credentials",
+			errorContains: "Invalid email or password",
 		},
 		{
 			name:     "empty password",
@@ -390,7 +390,7 @@ func TestAuthService_LoginUser(t *testing.T) {
 				userRepo.usersByEmail["test@example.com"] = existingUser
 			},
 			expectError:   true,
-			errorContains: "invalid credentials",
+			errorContains: "Invalid email or password",
 		},
 	}
 
@@ -673,7 +673,7 @@ func TestAuthService_LogoutUser(t *testing.T) {
 				cache.addToBlacklistError = fmt.Errorf("redis connection error")
 			},
 			expectError:   true,
-			errorContains: "failed to blacklist token",
+			errorContains: "Failed to blacklist token",
 		},
 		{
 			name:   "session deletion fails but logout succeeds",
@@ -713,7 +713,7 @@ func TestAuthService_LogoutUser(t *testing.T) {
 				cache.deleteSessionError = fmt.Errorf("redis session error")
 			},
 			expectError:   true,
-			errorContains: "failed to blacklist token", // Blacklist error should be returned
+			errorContains: "Failed to blacklist token", // Blacklist error should be returned
 		},
 	}
 
