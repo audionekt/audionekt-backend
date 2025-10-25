@@ -7,6 +7,7 @@ import (
 
 	"musicapp/internal/cache"
 	"musicapp/internal/errors"
+	"musicapp/internal/interfaces"
 	"musicapp/internal/middleware"
 	"musicapp/internal/models"
 	"musicapp/internal/repository"
@@ -15,38 +16,17 @@ import (
 	"github.com/google/uuid"
 )
 
-// Interfaces define contracts for dependencies
-// This follows Go's "Accept interfaces, return structs" principle
-type UserRepository interface {
-	GetByEmail(ctx context.Context, email string) (*models.User, error)
-	GetByUsername(ctx context.Context, username string) (*models.User, error)
-	GetByID(ctx context.Context, id uuid.UUID) (*models.User, error)
-	Create(ctx context.Context, user *models.User) error
-}
-
-type Cache interface {
-	SetSession(ctx context.Context, userID string, data interface{}, expiration time.Duration) error
-	DeleteSession(ctx context.Context, userID string) error
-	IsBlacklisted(ctx context.Context, jti string) (bool, error)
-	AddToBlacklist(ctx context.Context, jti string, expiration time.Duration) error
-}
-
-type AuthMiddleware interface {
-	GenerateToken(userID, username string) (string, error)
-	ValidateToken(tokenString string) (*middleware.Claims, error)
-}
-
 // AuthService now depends on interfaces, not concrete types
 // This makes it much easier to test and more flexible
 type AuthService struct {
-	userRepo       UserRepository
-	cache          Cache
-	authMiddleware AuthMiddleware
+	userRepo       interfaces.UserRepository
+	cache          interfaces.Cache
+	authMiddleware interfaces.AuthMiddleware
 }
 
 // NewAuthService creates a new AuthService with dependency injection
 // This follows the dependency injection pattern for better testability
-func NewAuthService(userRepo UserRepository, cache Cache, authMiddleware AuthMiddleware) *AuthService {
+func NewAuthService(userRepo interfaces.UserRepository, cache interfaces.Cache, authMiddleware interfaces.AuthMiddleware) *AuthService {
 	return &AuthService{
 		userRepo:       userRepo,
 		cache:          cache,
@@ -196,7 +176,7 @@ type UserRepositoryAdapter struct {
 	repo *repository.UserRepository
 }
 
-func NewUserRepositoryAdapter(repo *repository.UserRepository) UserRepository {
+func NewUserRepositoryAdapter(repo *repository.UserRepository) interfaces.UserRepository {
 	return &UserRepositoryAdapter{repo: repo}
 }
 
@@ -221,7 +201,7 @@ type CacheAdapter struct {
 	cache *cache.Cache
 }
 
-func NewCacheAdapter(cache *cache.Cache) Cache {
+func NewCacheAdapter(cache *cache.Cache) interfaces.Cache {
 	return &CacheAdapter{cache: cache}
 }
 
@@ -246,7 +226,7 @@ type AuthMiddlewareAdapter struct {
 	middleware *middleware.AuthMiddleware
 }
 
-func NewAuthMiddlewareAdapter(middleware *middleware.AuthMiddleware) AuthMiddleware {
+func NewAuthMiddlewareAdapter(middleware *middleware.AuthMiddleware) interfaces.AuthMiddleware {
 	return &AuthMiddlewareAdapter{middleware: middleware}
 }
 

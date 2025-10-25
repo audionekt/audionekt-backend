@@ -1,12 +1,11 @@
 package server
 
 import (
-	"log"
-
 	"musicapp/internal/cache"
 	"musicapp/internal/config"
 	"musicapp/internal/db"
 	"musicapp/internal/handlers"
+	"musicapp/internal/logging"
 	"musicapp/internal/middleware"
 	"musicapp/internal/repository"
 	"musicapp/internal/service"
@@ -16,9 +15,11 @@ import (
 // Dependencies holds all application dependencies
 type Dependencies struct {
 	// Infrastructure
-	Database *db.DB
-	Redis    *cache.Cache
-	S3       *storage.S3Client
+	Database         *db.DB
+	Redis            *cache.Cache
+	S3               *storage.S3Client
+	Logger           *logging.Logger
+	TransactionManager *db.TransactionManager
 
 	// Repositories
 	UserRepo   *repository.UserRepository
@@ -47,11 +48,27 @@ type Dependencies struct {
 
 // setupDependencies initializes all application dependencies
 func setupDependencies(cfg *config.Config) (*Dependencies, error) {
+	// Initialize logger first
+	var logger *logging.Logger
+	var err error
+	
+	if cfg.Environment == "production" {
+		logger, err = logging.NewProduction()
+	} else {
+		logger, err = logging.NewDevelopment()
+	}
+	if err != nil {
+		return nil, err
+	}
+
 	// Initialize database
 	database, err := db.New(cfg.DatabaseURL)
 	if err != nil {
 		return nil, err
 	}
+
+	// Initialize transaction manager
+	txManager := db.NewTransactionManager(database.Pool)
 
 	// Initialize Redis
 	redisCache, err := cache.New(cfg.RedisURL)
@@ -64,15 +81,15 @@ func setupDependencies(cfg *config.Config) (*Dependencies, error) {
 	if cfg.AWSAccessKeyID != "" && cfg.AWSSecretAccessKey != "" && cfg.S3BucketName != "" {
 		s3Client, err = storage.NewS3Client(cfg.AWSRegion, cfg.S3BucketName, cfg.S3CDNURL)
 		if err != nil {
-			log.Printf("Warning: Failed to initialize S3 client: %v", err)
+			logger.WithError(err).Warn("Failed to initialize S3 client")
 		} else {
-			log.Println("S3 client initialized successfully")
+			logger.Info("S3 client initialized successfully")
 		}
 	}
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret, redisCache)
-	loggingMiddleware := middleware.NewLoggingMiddleware()
+	loggingMiddleware := middleware.NewLoggingMiddleware(logger)
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(database)
@@ -82,7 +99,7 @@ func setupDependencies(cfg *config.Config) (*Dependencies, error) {
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, redisCache, authMiddleware)
-	userService := service.NewUserService(userRepo, redisCache, s3Client)
+	userService := service.NewUserService(userRepo, redisCache, s3Client, logger)
 	bandService := service.NewBandService(bandRepo, userRepo, redisCache, s3Client)
 	postService := service.NewPostService(postRepo, userRepo, bandRepo, redisCache, s3Client)
 	followService := service.NewFollowService(followRepo, userRepo, bandRepo, redisCache)
@@ -96,9 +113,11 @@ func setupDependencies(cfg *config.Config) (*Dependencies, error) {
 
 	return &Dependencies{
 		// Infrastructure
-		Database: database,
-		Redis:    redisCache,
-		S3:       s3Client,
+		Database:           database,
+		Redis:              redisCache,
+		S3:                 s3Client,
+		Logger:             logger,
+		TransactionManager: txManager,
 
 		// Repositories
 		UserRepo:   userRepo,

@@ -5,10 +5,17 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"musicapp/internal/logging"
 )
 
 func TestNewLoggingMiddleware(t *testing.T) {
-	middleware := NewLoggingMiddleware()
+	logger, err := logging.NewDevelopment()
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
+	
+	middleware := NewLoggingMiddleware(logger)
 
 	if middleware == nil {
 		t.Error("Expected middleware to be created, got nil")
@@ -82,7 +89,11 @@ func TestLoggingMiddleware_Logging(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			// Apply logging middleware
-			middleware := NewLoggingMiddleware()
+			logger, err := logging.NewDevelopment()
+			if err != nil {
+				t.Fatalf("Failed to create logger: %v", err)
+			}
+			middleware := NewLoggingMiddleware(logger)
 			handler := middleware.Logging(testHandler)
 			
 			// Record start time to verify logging doesn't take too long

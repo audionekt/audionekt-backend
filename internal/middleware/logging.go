@@ -1,15 +1,20 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"time"
+
+	"musicapp/internal/logging"
 )
 
-type LoggingMiddleware struct{}
+type LoggingMiddleware struct {
+	logger *logging.Logger
+}
 
-func NewLoggingMiddleware() *LoggingMiddleware {
-	return &LoggingMiddleware{}
+func NewLoggingMiddleware(logger *logging.Logger) *LoggingMiddleware {
+	return &LoggingMiddleware{
+		logger: logger,
+	}
 }
 
 func (l *LoggingMiddleware) Logging(next http.Handler) http.Handler {
@@ -19,16 +24,21 @@ func (l *LoggingMiddleware) Logging(next http.Handler) http.Handler {
 		// Create a response writer wrapper to capture status code
 		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
+		// Extract user ID from context if available
+		var userID *string
+		if id, ok := GetUserIDFromContext(r.Context()); ok {
+			userID = &id
+		}
+
+		// Log request
+		l.logger.LogRequest(r.Method, r.URL.Path, r.UserAgent(), r.RemoteAddr, userID)
+
 		next.ServeHTTP(wrapped, r)
 
 		duration := time.Since(start)
-		log.Printf(
-			"%s %s %d %v",
-			r.Method,
-			r.URL.Path,
-			wrapped.statusCode,
-			duration,
-		)
+
+		// Log response
+		l.logger.LogResponse(r.Method, r.URL.Path, wrapped.statusCode, duration, userID)
 	})
 }
 

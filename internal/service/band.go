@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"musicapp/internal/interfaces"
 	"musicapp/internal/models"
 	"musicapp/internal/repository"
 	"musicapp/internal/storage"
@@ -42,11 +43,11 @@ type S3ClientForBand interface {
 type BandService struct {
 	bandRepo BandRepository
 	userRepo UserRepositoryForBand
-	cache    Cache
+	cache    interfaces.Cache
 	s3Client S3ClientForBand
 }
 
-func NewBandService(bandRepo BandRepository, userRepo UserRepositoryForBand, cache Cache, s3Client S3ClientForBand) *BandService {
+func NewBandService(bandRepo BandRepository, userRepo UserRepositoryForBand, cache interfaces.Cache, s3Client S3ClientForBand) *BandService {
 	return &BandService{
 		bandRepo: bandRepo,
 		userRepo: userRepo,

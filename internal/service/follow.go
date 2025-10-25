@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"musicapp/internal/interfaces"
 	"musicapp/internal/models"
 	"musicapp/internal/repository"
 
@@ -33,10 +34,10 @@ type FollowService struct {
 	followRepo FollowRepositoryForFollow
 	userRepo   UserRepositoryForFollow
 	bandRepo   BandRepositoryForFollow
-	cache      Cache
+	cache      interfaces.Cache
 }
 
-func NewFollowService(followRepo FollowRepositoryForFollow, userRepo UserRepositoryForFollow, bandRepo BandRepositoryForFollow, cache Cache) *FollowService {
+func NewFollowService(followRepo FollowRepositoryForFollow, userRepo UserRepositoryForFollow, bandRepo BandRepositoryForFollow, cache interfaces.Cache) *FollowService {
 	return &FollowService{
 		followRepo: followRepo,
 		userRepo:   userRepo,
