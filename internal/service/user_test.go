@@ -7,12 +7,23 @@ import (
 	"strings"
 	"testing"
 
+	"musicapp/internal/interfaces"
+	"musicapp/internal/logging"
 	"musicapp/internal/models"
 	"musicapp/internal/storage"
 	"musicapp/pkg/utils"
 
 	"github.com/google/uuid"
 )
+
+// Helper function to create a test logger
+func createTestLogger() *logging.Logger {
+	logger, err := logging.NewDevelopment()
+	if err != nil {
+		panic("Failed to create test logger: " + err.Error())
+	}
+	return logger
+}
 
 // Extended MockUserRepository with additional methods for UserService
 type ExtendedMockUserRepository struct {
@@ -80,12 +91,12 @@ func (m *ExtendedMockUserRepository) GetAll(ctx context.Context, limit, offset i
 
 // TestableUserService allows dependency injection for testing
 type TestableUserService struct {
-	userRepo UserRepositoryExtended
-	cache    Cache
-	s3Client S3Client
+	userRepo interfaces.UserRepositoryExtended
+	cache    interfaces.Cache
+	s3Client interfaces.S3Client
 }
 
-func NewTestableUserService(userRepo UserRepositoryExtended, cache Cache, s3Client S3Client) *TestableUserService {
+func NewTestableUserService(userRepo interfaces.UserRepositoryExtended, cache interfaces.Cache, s3Client interfaces.S3Client) *TestableUserService {
 	return &TestableUserService{
 		userRepo: userRepo,
 		cache:    cache,
@@ -253,7 +264,7 @@ func TestUserService_CreateUser(t *testing.T) {
 			}
 			
 			// Create REAL UserService with mocks - this is the key difference!
-			userService := NewUserService(userRepo, cache, s3Client)
+			userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 			
 			// Test CreateUser
 			user, err := userService.CreateUser(context.Background(), tt.req)
@@ -314,7 +325,7 @@ func TestUserService_GetUser(t *testing.T) {
 		userRepo.usersByID[userID.String()] = user
 		
 		// Create REAL UserService with mocks
-		userService := NewUserService(userRepo, cache, s3Client)
+		userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 		
 		// Test GetUser
 		resultUser, err := userService.GetUser(context.Background(), userID)
@@ -340,7 +351,7 @@ func TestUserService_GetUser(t *testing.T) {
 		// No user in repository
 		
 		// Create REAL UserService with mocks
-		userService := NewUserService(userRepo, cache, s3Client)
+		userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 		
 		// Test GetUser
 		userID := uuid.New()
@@ -367,7 +378,7 @@ func TestUserService_GetUser(t *testing.T) {
 		userRepo.getByIDError = fmt.Errorf("database connection error")
 		
 		// Create REAL UserService with mocks
-		userService := NewUserService(userRepo, cache, s3Client)
+		userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 		
 		// Test GetUser
 		userID := uuid.New()
@@ -554,9 +565,9 @@ func TestUserService_UploadProfilePicture(t *testing.T) {
 			// Create REAL UserService with mocks
 			var userService *UserService
 			if tt.name == "S3 client not configured" {
-				userService = NewUserService(userRepo, cache, nil) // Pass nil for S3Client
+				userService = NewUserService(userRepo, cache, nil, createTestLogger()) // Pass nil for S3Client
 			} else {
-				userService = NewUserService(userRepo, cache, s3Client)
+				userService = NewUserService(userRepo, cache, s3Client, createTestLogger())
 			}
 			
 			// Test UploadProfilePicture
@@ -633,7 +644,7 @@ func TestUserService_GetUserBands(t *testing.T) {
 			}
 			
 			// Create REAL UserService with mocks
-			userService := NewUserService(userRepo, cache, s3Client)
+			userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 			
 			// Test GetUserBands
 			bands, err := userService.GetUserBands(context.Background(), tt.userID)
@@ -732,7 +743,7 @@ func TestUserService_GetUserPosts(t *testing.T) {
 			}
 			
 			// Create REAL UserService with mocks
-			userService := NewUserService(userRepo, cache, s3Client)
+			userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 			
 			// Test GetUserPosts
 			posts, err := userService.GetUserPosts(context.Background(), tt.userID, tt.limit, tt.offset)
@@ -857,7 +868,7 @@ func TestUserService_GetAllUsers(t *testing.T) {
 			}
 			
 			// Create REAL UserService with mocks
-			userService := NewUserService(userRepo, cache, s3Client)
+			userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 			
 			// Test GetAllUsers
 			users, err := userService.GetAllUsers(context.Background(), tt.limit, tt.offset)
@@ -983,7 +994,7 @@ func TestUserService_GetFollowing(t *testing.T) {
 			}
 			
 			// Create REAL UserService with mocks
-			userService := NewUserService(userRepo, cache, s3Client)
+			userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 			
 			// Test GetFollowing
 			users, err := userService.GetFollowing(context.Background(), tt.userID, tt.limit, tt.offset)
@@ -1126,7 +1137,7 @@ func TestUserService_GetFollowers(t *testing.T) {
 			}
 			
 			// Create REAL UserService with mocks
-			userService := NewUserService(userRepo, cache, s3Client)
+			userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 			
 			// Test GetFollowers
 			users, err := userService.GetFollowers(context.Background(), tt.userID, tt.limit, tt.offset)
@@ -1309,7 +1320,7 @@ func TestUserService_GetNearbyUsers(t *testing.T) {
 			}
 			
 			// Create REAL UserService with mocks
-			userService := NewUserService(userRepo, cache, s3Client)
+			userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 			
 			// Test GetNearbyUsers
 			users, err := userService.GetNearbyUsers(context.Background(), tt.lat, tt.lng, tt.radiusKm, tt.limit)
@@ -1459,7 +1470,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 			}
 			
 			// Create REAL UserService with mocks
-			userService := NewUserService(userRepo, cache, s3Client)
+			userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 			
 			// Test UpdateUser
 			user, err := userService.UpdateUser(context.Background(), tt.userID, tt.req)

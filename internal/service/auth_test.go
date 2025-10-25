@@ -848,7 +848,7 @@ func TestUserService_Constructor(t *testing.T) {
 	cache := &cache.Cache{}
 	s3Client := &storage.S3Client{}
 	
-	userService := NewUserService(userRepo, cache, s3Client)
+	userService := NewUserService(userRepo, cache, s3Client, createTestLogger())
 	
 	if userService == nil {
 		t.Error("Expected UserService to be created")

@@ -5,7 +5,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
+	"musicapp/internal/interfaces"
+	"musicapp/internal/logging"
 	"musicapp/internal/models"
 	"musicapp/internal/repository"
 	"musicapp/internal/storage"
@@ -14,36 +17,23 @@ import (
 	"github.com/google/uuid"
 )
 
-// Extended interfaces for UserService (building on existing interfaces from auth.go)
-type UserRepositoryExtended interface {
-	UserRepository
-	Update(ctx context.Context, user *models.User) error
-	GetNearby(ctx context.Context, lat, lng float64, radiusKm, limit int) ([]*models.User, error)
-	GetFollowers(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.User, error)
-	GetFollowing(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.User, error)
-	GetAll(ctx context.Context, limit, offset int) ([]*models.User, error)
-}
-
-type S3Client interface {
-	ValidateImageFile(filename string, size int64) error
-	UploadImage(ctx context.Context, userID, filename string, file io.Reader, size int64) (*storage.UploadResult, error)
-}
-
 // UserService now depends on interfaces, not concrete types
 // This makes it much easier to test and more flexible
 type UserService struct {
-	userRepo UserRepositoryExtended
-	cache    Cache
-	s3Client S3Client
+	userRepo interfaces.UserRepositoryExtended
+	cache    interfaces.Cache
+	s3Client interfaces.S3Client
+	logger   *logging.Logger
 }
 
 // NewUserService creates a new UserService with dependency injection
 // This follows the dependency injection pattern for better testability
-func NewUserService(userRepo UserRepositoryExtended, cache Cache, s3Client S3Client) *UserService {
+func NewUserService(userRepo interfaces.UserRepositoryExtended, cache interfaces.Cache, s3Client interfaces.S3Client, logger *logging.Logger) *UserService {
 	return &UserService{
 		userRepo: userRepo,
 		cache:    cache,
 		s3Client: s3Client,
+		logger:   logger,
 	}
 }
 
@@ -213,41 +203,47 @@ func (s *UserService) GetFollowing(ctx context.Context, userID uuid.UUID, limit,
 
 // UploadProfilePicture uploads a profile picture to S3
 func (s *UserService) UploadProfilePicture(ctx context.Context, userID uuid.UUID, filename string, fileData []byte) (string, error) {
+	start := time.Now()
+	logger := s.logger.WithUserID(userID.String()).WithOperation("upload_profile_picture")
+	
 	if s.s3Client == nil {
+		logger.Error("S3 client not configured")
 		return "", fmt.Errorf("S3 client not configured")
 	}
 
-	// Debug logging
-	fmt.Printf("DEBUG: Uploading file %s, size: %d bytes, userID: %s\n", filename, len(fileData), userID.String())
+	logger.WithField("filename", filename).WithField("file_size", len(fileData)).Info("Starting profile picture upload")
 
 	// Validate image file
 	if err := s.s3Client.ValidateImageFile(filename, int64(len(fileData))); err != nil {
-		fmt.Printf("DEBUG: Validation failed: %v\n", err)
+		logger.WithError(err).Error("Image validation failed")
 		return "", fmt.Errorf("invalid image file: %w", err)
 	}
 
-	fmt.Printf("DEBUG: Validation passed, attempting S3 upload...\n")
+	logger.Debug("Image validation passed, attempting S3 upload")
 
 	// Upload to S3
 	uploadResult, err := s.s3Client.UploadImage(ctx, userID.String(), filename, bytes.NewReader(fileData), int64(len(fileData)))
 	if err != nil {
-		fmt.Printf("DEBUG: S3 upload failed: %v\n", err)
+		logger.WithError(err).Error("S3 upload failed")
 		return "", fmt.Errorf("failed to upload profile picture: %w", err)
 	}
 
-	fmt.Printf("DEBUG: S3 upload successful, URL: %s\n", uploadResult.URL)
+	logger.WithField("upload_url", uploadResult.URL).WithDuration(time.Since(start)).Info("S3 upload successful")
 
 	// Update user profile picture URL
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil || user == nil {
+		logger.WithError(err).Error("User not found during profile picture update")
 		return "", fmt.Errorf("user not found: %w", err)
 	}
 
 	user.ProfilePictureURL = &uploadResult.URL
 	if err := s.userRepo.Update(ctx, user); err != nil {
+		logger.WithError(err).Error("Failed to update user profile picture URL")
 		return "", fmt.Errorf("failed to update profile picture URL: %w", err)
 	}
 
+	logger.WithDuration(time.Since(start)).Info("Profile picture upload completed successfully")
 	return uploadResult.URL, nil
 }
 
@@ -280,7 +276,7 @@ type UserRepositoryExtendedAdapter struct {
 	*UserRepositoryAdapter
 }
 
-func NewUserRepositoryExtendedAdapter(repo *repository.UserRepository) UserRepositoryExtended {
+func NewUserRepositoryExtendedAdapter(repo *repository.UserRepository) interfaces.UserRepositoryExtended {
 	baseAdapter := NewUserRepositoryAdapter(repo)
 	return &UserRepositoryExtendedAdapter{
 		UserRepositoryAdapter: baseAdapter.(*UserRepositoryAdapter),
@@ -312,7 +308,7 @@ type S3ClientAdapter struct {
 	s3Client *storage.S3Client
 }
 
-func NewS3ClientAdapter(s3Client *storage.S3Client) S3Client {
+func NewS3ClientAdapter(s3Client *storage.S3Client) interfaces.S3Client {
 	return &S3ClientAdapter{s3Client: s3Client}
 }
 

@@ -64,6 +64,7 @@ services:
     container_name: musicapp_seeder
     environment:
       DATABASE_URL: postgres://dev:devpassword@postgres:5432/musicapp?sslmode=disable
+      ENVIRONMENT: development
     depends_on:
       postgres:
         condition: service_healthy

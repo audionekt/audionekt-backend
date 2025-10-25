@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"musicapp/internal/interfaces"
 	"musicapp/internal/models"
 	"musicapp/internal/repository"
 	"musicapp/internal/storage"
@@ -52,11 +53,11 @@ type PostService struct {
 	postRepo PostRepository
 	userRepo UserRepositoryForPost
 	bandRepo BandRepositoryForPost
-	cache    Cache
+	cache    interfaces.Cache
 	s3Client S3ClientForPost
 }
 
-func NewPostService(postRepo PostRepository, userRepo UserRepositoryForPost, bandRepo BandRepositoryForPost, cache Cache, s3Client S3ClientForPost) *PostService {
+func NewPostService(postRepo PostRepository, userRepo UserRepositoryForPost, bandRepo BandRepositoryForPost, cache interfaces.Cache, s3Client S3ClientForPost) *PostService {
 	return &PostService{
 		postRepo: postRepo,
 		userRepo: userRepo,
