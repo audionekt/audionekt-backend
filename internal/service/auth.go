@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"musicapp/internal/cache"
+	"musicapp/internal/errors"
 	"musicapp/internal/middleware"
 	"musicapp/internal/models"
 	"musicapp/internal/repository"
@@ -58,18 +59,18 @@ func (s *AuthService) RegisterUser(ctx context.Context, req *models.CreateUserRe
 	// Check if user already exists
 	existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
 	if err == nil && existingUser != nil {
-		return nil, "", fmt.Errorf("user with email %s already exists", req.Email)
+		return nil, "", errors.NewUserAlreadyExists("email", req.Email)
 	}
 
 	existingUser, err = s.userRepo.GetByUsername(ctx, req.Username)
 	if err == nil && existingUser != nil {
-		return nil, "", fmt.Errorf("username %s already taken", req.Username)
+		return nil, "", errors.NewUserAlreadyExists("username", req.Username)
 	}
 
 	// Hash password
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to hash password: %w", err)
+		return nil, "", errors.Wrap(err, errors.ErrCodeInternalError, "Failed to hash password")
 	}
 
 	// Create user
@@ -84,13 +85,13 @@ func (s *AuthService) RegisterUser(ctx context.Context, req *models.CreateUserRe
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
-		return nil, "", fmt.Errorf("failed to create user: %w", err)
+		return nil, "", errors.Wrap(err, errors.ErrCodeDatabaseError, "Failed to create user")
 	}
 
 	// Generate JWT token
 	token, err := s.authMiddleware.GenerateToken(user.ID.String(), user.Username)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to generate token: %w", err)
+		return nil, "", errors.Wrap(err, errors.ErrCodeInternalError, "Failed to generate token")
 	}
 
 	// Store session in Redis
@@ -112,18 +113,18 @@ func (s *AuthService) LoginUser(ctx context.Context, email, password string) (*m
 	// Get user by email
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil || user == nil {
-		return nil, "", fmt.Errorf("invalid credentials")
+		return nil, "", errors.ErrInvalidCredentials
 	}
 
 	// Check password
 	if !utils.CheckPasswordHash(password, user.PasswordHash) {
-		return nil, "", fmt.Errorf("invalid credentials")
+		return nil, "", errors.ErrInvalidCredentials
 	}
 
 	// Generate JWT token
 	token, err := s.authMiddleware.GenerateToken(user.ID.String(), user.Username)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to generate token: %w", err)
+		return nil, "", errors.Wrap(err, errors.ErrCodeInternalError, "Failed to generate token")
 	}
 
 	// Store session in Redis
@@ -144,7 +145,7 @@ func (s *AuthService) LoginUser(ctx context.Context, email, password string) (*m
 func (s *AuthService) LogoutUser(ctx context.Context, jti, userID string) error {
 	// Add token to blacklist (24 hours from now)
 	if err := s.cache.AddToBlacklist(ctx, jti, 24*time.Hour); err != nil {
-		return fmt.Errorf("failed to blacklist token: %w", err)
+		return errors.Wrap(err, errors.ErrCodeRedisError, "Failed to blacklist token")
 	}
 
 	// Clear session

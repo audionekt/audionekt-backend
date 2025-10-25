@@ -81,7 +81,7 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create middleware with mock cache
 			cache := tt.setupCache()
-			middleware := NewAuthMiddleware("test-secret-key", cache)
+			middleware := NewAuthMiddleware([]byte("test-secret-key"), cache)
 
 			// Create a test handler that checks context
 			var contextUserID, contextUsername, contextJTI interface{}
@@ -153,7 +153,7 @@ func TestAuthMiddleware_RequireBandAdmin(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create middleware
-			middleware := NewAuthMiddleware("test-secret", &cache.Cache{})
+			middleware := NewAuthMiddleware([]byte("test-secret"), &cache.Cache{})
 
 			// Create a test handler
 			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -187,25 +187,25 @@ func TestAuthMiddleware_RequireBandAdmin(t *testing.T) {
 func TestAuthMiddleware_ValidateToken_EdgeCases(t *testing.T) {
 	tests := []struct {
 		name        string
-		jwtSecret   string
+		jwtSecret   []byte
 		tokenString string
 		expectError bool
 	}{
 		{
 			name:        "token with wrong secret",
-			jwtSecret:   "test-secret-key",
+			jwtSecret:   []byte("test-secret-key"),
 			tokenString: "", // Will be generated with wrong secret
 			expectError: true,
 		},
 		{
 			name:        "malformed token",
-			jwtSecret:   "test-secret-key",
+			jwtSecret:   []byte("test-secret-key"),
 			tokenString: "malformed.token.here",
 			expectError: true,
 		},
 		{
 			name:        "empty token string",
-			jwtSecret:   "test-secret-key",
+			jwtSecret:   []byte("test-secret-key"),
 			tokenString: "",
 			expectError: true,
 		},
@@ -217,7 +217,7 @@ func TestAuthMiddleware_ValidateToken_EdgeCases(t *testing.T) {
 
 			// Generate token with wrong secret to test error cases
 			if tt.name == "token with wrong secret" {
-				wrongMiddleware := NewAuthMiddleware("wrong-secret", &cache.Cache{})
+				wrongMiddleware := NewAuthMiddleware([]byte("wrong-secret"), &cache.Cache{})
 				token, err := wrongMiddleware.GenerateToken("user123", "testuser")
 				if err != nil {
 					t.Fatalf("Failed to generate token: %v", err)

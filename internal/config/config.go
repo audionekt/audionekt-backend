@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 
+	"musicapp/internal/secrets"
+
 	"github.com/joho/godotenv"
 )
 
@@ -16,7 +18,7 @@ type Config struct {
 	RedisURL string
 
 	// JWT
-	JWTSecret string
+	JWTSecret []byte
 
 	// AWS S3
 	AWSRegion          string
@@ -36,10 +38,16 @@ func Load() *Config {
 		log.Println("No .env file found, using environment variables")
 	}
 
+	// Initialize secret manager
+	secretManager, err := secrets.NewSecretManager()
+	if err != nil {
+		log.Fatalf("Failed to initialize secret manager: %v", err)
+	}
+
 	config := &Config{
 		DatabaseURL:        getEnv("DATABASE_URL", "postgres://dev:devpassword@localhost:5432/musicapp?sslmode=disable"),
 		RedisURL:           getEnv("REDIS_URL", "redis://localhost:6379"),
-		JWTSecret:          getEnv("JWT_SECRET", "your-super-secret-jwt-key-change-in-production"),
+		JWTSecret:          secretManager.GetJWTSecret(),
 		AWSRegion:          getEnv("AWS_REGION", "us-east-1"),
 		AWSAccessKeyID:     getEnv("AWS_ACCESS_KEY_ID", ""),
 		AWSSecretAccessKey: getEnv("AWS_SECRET_ACCESS_KEY", ""),

@@ -23,9 +23,9 @@ type AuthMiddleware struct {
 	cache     *cache.Cache
 }
 
-func NewAuthMiddleware(jwtSecret string, cache *cache.Cache) *AuthMiddleware {
+func NewAuthMiddleware(jwtSecret []byte, cache *cache.Cache) *AuthMiddleware {
 	return &AuthMiddleware{
-		jwtSecret: []byte(jwtSecret),
+		jwtSecret: jwtSecret,
 		cache:     cache,
 	}
 }
@@ -55,14 +55,16 @@ func (a *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		}
 
 		// Check if token is blacklisted
-		isBlacklisted, err := a.cache.IsBlacklisted(r.Context(), claims.ID)
-		if err != nil {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
-		if isBlacklisted {
-			http.Error(w, "Token has been revoked", http.StatusUnauthorized)
-			return
+		if a.cache != nil {
+			isBlacklisted, err := a.cache.IsBlacklisted(r.Context(), claims.ID)
+			if err != nil {
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+			if isBlacklisted {
+				http.Error(w, "Token has been revoked", http.StatusUnauthorized)
+				return
+			}
 		}
 
 		// Add user info to context

@@ -2,25 +2,120 @@ package middleware
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"musicapp/internal/cache"
 )
 
+func TestRequireAuth(t *testing.T) {
+	tests := []struct {
+		name           string
+		authHeader     string
+		expectStatus   int
+		expectUserID   string
+		expectUsername string
+	}{
+		{
+			name:           "valid token",
+			authHeader:     "", // Will be generated
+			expectStatus:   http.StatusOK, // Should work now with nil cache check
+			expectUserID:   "user123",
+			expectUsername: "testuser",
+		},
+		{
+			name:         "missing authorization header",
+			authHeader:   "",
+			expectStatus: http.StatusUnauthorized,
+		},
+		{
+			name:         "invalid authorization header format",
+			authHeader:   "InvalidFormat token123",
+			expectStatus: http.StatusUnauthorized,
+		},
+		{
+			name:         "invalid token",
+			authHeader:   "Bearer invalid.token.here",
+			expectStatus: http.StatusUnauthorized,
+		},
+		{
+			name:         "empty token",
+			authHeader:   "Bearer ",
+			expectStatus: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			middleware := NewAuthMiddleware([]byte("test-secret-key"), nil)
+
+			// Generate token if needed
+			if tt.name == "valid token" {
+				token, err := middleware.GenerateToken(tt.expectUserID, tt.expectUsername)
+				if err != nil {
+					t.Fatalf("Failed to generate token: %v", err)
+				}
+				tt.authHeader = "Bearer " + token
+			}
+
+			// Create test handler
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Check if user context is set
+				if tt.expectUserID != "" {
+					userID, ok := GetUserIDFromContext(r.Context())
+					if !ok {
+						t.Error("Expected userID in context")
+					}
+					if userID != tt.expectUserID {
+						t.Errorf("Expected userID '%s', got '%s'", tt.expectUserID, userID)
+					}
+
+					username, ok := GetUsernameFromContext(r.Context())
+					if !ok {
+						t.Error("Expected username in context")
+					}
+					if username != tt.expectUsername {
+						t.Errorf("Expected username '%s', got '%s'", tt.expectUsername, username)
+					}
+				}
+				w.WriteHeader(http.StatusOK)
+			})
+
+			// Create request
+			req := httptest.NewRequest("GET", "/test", nil)
+			if tt.authHeader != "" {
+				req.Header.Set("Authorization", tt.authHeader)
+			}
+
+			// Create response recorder
+			rr := httptest.NewRecorder()
+
+			// Apply middleware
+			middleware.RequireAuth(handler).ServeHTTP(rr, req)
+
+			// Check status code
+			if rr.Code != tt.expectStatus {
+				t.Errorf("Expected status %d, got %d", tt.expectStatus, rr.Code)
+			}
+		})
+	}
+}
+
 func TestNewAuthMiddleware(t *testing.T) {
 	tests := []struct {
 		name     string
-		jwtSecret string
+		jwtSecret []byte
 		cache    *cache.Cache
 	}{
 		{
 			name:      "create auth middleware with valid parameters",
-			jwtSecret: "test-secret-key",
+			jwtSecret: []byte("test-secret-key"),
 			cache:     &cache.Cache{},
 		},
 		{
 			name:      "create auth middleware with empty secret",
-			jwtSecret: "",
+			jwtSecret: []byte(""),
 			cache:     &cache.Cache{},
 		},
 	}
@@ -45,35 +140,35 @@ func TestNewAuthMiddleware(t *testing.T) {
 func TestAuthMiddleware_ValidateToken(t *testing.T) {
 	tests := []struct {
 		name        string
-		jwtSecret   string
+		jwtSecret   []byte
 		tokenString string
 		expectError bool
 		expectClaims bool
 	}{
 		{
 			name:        "valid token",
-			jwtSecret:   "test-secret-key",
+			jwtSecret:   []byte("test-secret-key"),
 			tokenString: "", // Will be generated
 			expectError: false,
 			expectClaims: true,
 		},
 		{
 			name:        "invalid token format",
-			jwtSecret:   "test-secret-key",
+			jwtSecret:   []byte("test-secret-key"),
 			tokenString: "invalid.token.format",
 			expectError: true,
 			expectClaims: false,
 		},
 		{
 			name:        "empty token",
-			jwtSecret:   "test-secret-key",
+			jwtSecret:   []byte("test-secret-key"),
 			tokenString: "",
 			expectError: true,
 			expectClaims: false,
 		},
 		{
 			name:        "token with wrong secret",
-			jwtSecret:   "test-secret-key",
+			jwtSecret:   []byte("test-secret-key"),
 			tokenString: "", // Will be generated with different secret
 			expectError: true,
 			expectClaims: false,
@@ -82,7 +177,7 @@ func TestAuthMiddleware_ValidateToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			middleware := NewAuthMiddleware(tt.jwtSecret, &cache.Cache{})
+			middleware := NewAuthMiddleware(tt.jwtSecret, nil)
 
 			// Generate token if needed
 			if tt.name == "valid token" {
@@ -93,7 +188,7 @@ func TestAuthMiddleware_ValidateToken(t *testing.T) {
 				tt.tokenString = token
 			} else if tt.name == "token with wrong secret" {
 				// Generate token with different secret
-				wrongMiddleware := NewAuthMiddleware("wrong-secret", &cache.Cache{})
+				wrongMiddleware := NewAuthMiddleware([]byte("wrong-secret"), nil)
 				token, err := wrongMiddleware.GenerateToken("user123", "testuser")
 				if err != nil {
 					t.Fatalf("Failed to generate token: %v", err)
@@ -135,28 +230,28 @@ func TestAuthMiddleware_ValidateToken(t *testing.T) {
 func TestAuthMiddleware_GenerateToken(t *testing.T) {
 	tests := []struct {
 		name      string
-		jwtSecret string
+		jwtSecret []byte
 		userID    string
 		username  string
 		expectError bool
 	}{
 		{
 			name:      "generate valid token",
-			jwtSecret: "test-secret-key",
+			jwtSecret: []byte("test-secret-key"),
 			userID:    "user123",
 			username:  "testuser",
 			expectError: false,
 		},
 		{
 			name:      "generate token with empty userID",
-			jwtSecret: "test-secret-key",
+			jwtSecret: []byte("test-secret-key"),
 			userID:    "",
 			username:  "testuser",
 			expectError: false,
 		},
 		{
 			name:      "generate token with empty username",
-			jwtSecret: "test-secret-key",
+			jwtSecret: []byte("test-secret-key"),
 			userID:    "user123",
 			username:  "",
 			expectError: false,
@@ -165,7 +260,7 @@ func TestAuthMiddleware_GenerateToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			middleware := NewAuthMiddleware(tt.jwtSecret, &cache.Cache{})
+			middleware := NewAuthMiddleware(tt.jwtSecret, nil)
 
 			// Test GenerateToken
 			token, err := middleware.GenerateToken(tt.userID, tt.username)

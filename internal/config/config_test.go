@@ -9,17 +9,18 @@ func TestLoad(t *testing.T) {
 	tests := []struct {
 		name           string
 		envVars        map[string]string
+		expectError    bool
 		expectedConfig *Config
 	}{
 		{
-			name: "load with default values",
+			name: "load with JWT_SECRET environment variable",
 			envVars: map[string]string{
-				// No environment variables set
+				"JWT_SECRET": "test-secret-that-is-long-enough-for-validation-purposes",
 			},
+			expectError: false,
 			expectedConfig: &Config{
 				DatabaseURL:        "postgres://dev:devpassword@localhost:5432/musicapp?sslmode=disable",
 				RedisURL:           "redis://localhost:6379",
-				JWTSecret:          "your-super-secret-jwt-key-change-in-production",
 				AWSRegion:          "us-east-1",
 				AWSAccessKeyID:     "",
 				AWSSecretAccessKey: "",
@@ -34,7 +35,7 @@ func TestLoad(t *testing.T) {
 			envVars: map[string]string{
 				"DATABASE_URL":           "postgres://custom:password@localhost:5432/testdb",
 				"REDIS_URL":              "redis://custom:6379",
-				"JWT_SECRET":             "custom-jwt-secret",
+				"JWT_SECRET":             "custom-jwt-secret-that-is-long-enough-for-validation",
 				"AWS_REGION":             "us-west-2",
 				"AWS_ACCESS_KEY_ID":      "custom-access-key",
 				"AWS_SECRET_ACCESS_KEY":  "custom-secret-key",
@@ -43,10 +44,10 @@ func TestLoad(t *testing.T) {
 				"PORT":                   "3000",
 				"ENVIRONMENT":            "production",
 			},
+			expectError: false,
 			expectedConfig: &Config{
 				DatabaseURL:        "postgres://custom:password@localhost:5432/testdb",
 				RedisURL:           "redis://custom:6379",
-				JWTSecret:          "custom-jwt-secret",
 				AWSRegion:          "us-west-2",
 				AWSAccessKeyID:     "custom-access-key",
 				AWSSecretAccessKey: "custom-secret-key",
@@ -62,11 +63,12 @@ func TestLoad(t *testing.T) {
 				"DATABASE_URL": "postgres://partial:password@localhost:5432/partialdb",
 				"PORT":         "9000",
 				"ENVIRONMENT":  "staging",
+				"JWT_SECRET":   "partial-jwt-secret-that-is-long-enough-for-validation",
 			},
+			expectError: false,
 			expectedConfig: &Config{
 				DatabaseURL:        "postgres://partial:password@localhost:5432/partialdb",
 				RedisURL:           "redis://localhost:6379", // Default
-				JWTSecret:          "your-super-secret-jwt-key-change-in-production", // Default
 				AWSRegion:          "us-east-1", // Default
 				AWSAccessKeyID:     "",
 				AWSSecretAccessKey: "",
@@ -91,15 +93,12 @@ func TestLoad(t *testing.T) {
 			// Load configuration
 			config := Load()
 
-			// Verify configuration
+			// Verify configuration (excluding JWTSecret which is now []byte)
 			if config.DatabaseURL != tt.expectedConfig.DatabaseURL {
 				t.Errorf("Expected DatabaseURL %s, got %s", tt.expectedConfig.DatabaseURL, config.DatabaseURL)
 			}
 			if config.RedisURL != tt.expectedConfig.RedisURL {
 				t.Errorf("Expected RedisURL %s, got %s", tt.expectedConfig.RedisURL, config.RedisURL)
-			}
-			if config.JWTSecret != tt.expectedConfig.JWTSecret {
-				t.Errorf("Expected JWTSecret %s, got %s", tt.expectedConfig.JWTSecret, config.JWTSecret)
 			}
 			if config.AWSRegion != tt.expectedConfig.AWSRegion {
 				t.Errorf("Expected AWSRegion %s, got %s", tt.expectedConfig.AWSRegion, config.AWSRegion)
@@ -121,6 +120,11 @@ func TestLoad(t *testing.T) {
 			}
 			if config.Environment != tt.expectedConfig.Environment {
 				t.Errorf("Expected Environment %s, got %s", tt.expectedConfig.Environment, config.Environment)
+			}
+
+			// Verify JWTSecret is not empty
+			if len(config.JWTSecret) == 0 {
+				t.Error("Expected JWTSecret to be non-empty")
 			}
 
 			// Clean up environment variables
