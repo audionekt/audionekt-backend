@@ -27,30 +27,30 @@ type User struct {
 }
 
 type Location struct {
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
+	Latitude  float64 `json:"latitude" validate:"latitude"`
+	Longitude float64 `json:"longitude" validate:"longitude"`
 }
 
 type CreateUserRequest struct {
-	Username string    `json:"username" validate:"required,min=3,max=50"`
+	Username string    `json:"username" validate:"required,username"`
 	Email    string    `json:"email" validate:"required,email"`
-	Password string    `json:"password" validate:"required,min=8"`
+	Password string    `json:"password" validate:"required,password"`
 	Location *Location `json:"location,omitempty"`
-	City     *string   `json:"city,omitempty"`
-	Country  *string   `json:"country,omitempty"`
+	City     *string   `json:"city,omitempty" validate:"omitempty,min=1,max=100"`
+	Country  *string   `json:"country,omitempty" validate:"omitempty,min=1,max=100"`
 }
 
 type UpdateUserRequest struct {
-	DisplayName     *string   `json:"display_name,omitempty"`
-	Bio             *string   `json:"bio,omitempty"`
+	DisplayName     *string   `json:"display_name,omitempty" validate:"omitempty,min=1,max=100"`
+	Bio             *string   `json:"bio,omitempty" validate:"omitempty,max=500"`
 	Location        *Location `json:"location,omitempty"`
-	City            *string   `json:"city,omitempty"`
-	Country         *string   `json:"country,omitempty"`
-	Genres          []string  `json:"genres,omitempty"`
-	Skills          []string  `json:"skills,omitempty"`
-	SpotifyURL      *string   `json:"spotify_url,omitempty"`
-	SoundcloudURL   *string   `json:"soundcloud_url,omitempty"`
-	InstagramHandle *string   `json:"instagram_handle,omitempty"`
+	City            *string   `json:"city,omitempty" validate:"omitempty,min=1,max=100"`
+	Country         *string   `json:"country,omitempty" validate:"omitempty,min=1,max=100"`
+	Genres          []string  `json:"genres,omitempty" validate:"omitempty,dive,min=1,max=50"`
+	Skills          []string  `json:"skills,omitempty" validate:"omitempty,dive,min=1,max=50"`
+	SpotifyURL      *string   `json:"spotify_url,omitempty" validate:"omitempty,url"`
+	SoundcloudURL   *string   `json:"soundcloud_url,omitempty" validate:"omitempty,url"`
+	InstagramHandle *string   `json:"instagram_handle,omitempty" validate:"omitempty,instagram_handle"`
 }
 
 type UserResponse struct {

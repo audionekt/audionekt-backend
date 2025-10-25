@@ -4,29 +4,33 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"musicapp/internal/errors"
 	"musicapp/internal/middleware"
 	"musicapp/internal/models"
 	"musicapp/internal/service"
+	"musicapp/internal/validation"
 	"musicapp/pkg/utils"
 )
 
 type AuthHandler struct {
 	authService *service.AuthService
+	validator   *validation.Validator
 }
 
 func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
+		validator:   validation.New(),
 	}
 }
 
 type RegisterRequest struct {
-	Username string           `json:"username" validate:"required,min=3,max=50"`
+	Username string           `json:"username" validate:"required,username"`
 	Email    string           `json:"email" validate:"required,email"`
-	Password string           `json:"password" validate:"required,min=8"`
+	Password string           `json:"password" validate:"required,password"`
 	Location *models.Location `json:"location,omitempty"`
-	City     *string          `json:"city,omitempty"`
-	Country  *string          `json:"country,omitempty"`
+	City     *string          `json:"city,omitempty" validate:"omitempty,min=1,max=100"`
+	Country  *string          `json:"country,omitempty" validate:"omitempty,min=1,max=100"`
 }
 
 type LoginRequest struct {
@@ -57,8 +61,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate request
-	if req.Username == "" || req.Email == "" || req.Password == "" {
-		utils.WriteError(w, http.StatusBadRequest, "Username, email, and password are required")
+	if err := h.validator.ValidateStruct(req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Validation failed")
 		return
 	}
 
@@ -75,12 +79,9 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// Use service to register user
 	user, token, err := h.authService.RegisterUser(r.Context(), createReq)
 	if err != nil {
-		if err.Error() == "user with email "+req.Email+" already exists" {
-			utils.WriteError(w, http.StatusConflict, "User with this email already exists")
-			return
-		}
-		if err.Error() == "username "+req.Username+" already taken" {
-			utils.WriteError(w, http.StatusConflict, "Username already taken")
+		appErr := errors.GetAppError(err)
+		if appErr != nil {
+			utils.WriteError(w, appErr.HTTPStatus, appErr.Message)
 			return
 		}
 		utils.WriteError(w, http.StatusInternalServerError, "Failed to register user")
@@ -113,14 +114,19 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate request
-	if req.Email == "" || req.Password == "" {
-		utils.WriteError(w, http.StatusBadRequest, "Email and password are required")
+	if err := h.validator.ValidateStruct(req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Validation failed")
 		return
 	}
 
 	// Use service to login user
 	user, token, err := h.authService.LoginUser(r.Context(), req.Email, req.Password)
 	if err != nil {
+		appErr := errors.GetAppError(err)
+		if appErr != nil {
+			utils.WriteError(w, appErr.HTTPStatus, appErr.Message)
+			return
+		}
 		utils.WriteError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}

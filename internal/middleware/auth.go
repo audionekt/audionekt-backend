@@ -23,9 +23,9 @@ type AuthMiddleware struct {
 	cache     *cache.Cache
 }
 
-func NewAuthMiddleware(jwtSecret string, cache *cache.Cache) *AuthMiddleware {
+func NewAuthMiddleware(jwtSecret []byte, cache *cache.Cache) *AuthMiddleware {
 	return &AuthMiddleware{
-		jwtSecret: []byte(jwtSecret),
+		jwtSecret: jwtSecret,
 		cache:     cache,
 	}
 }
