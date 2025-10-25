@@ -1,0 +1,96 @@
+name: Test and Coverage
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        env:
+          POSTGRES_DB: musicapp_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: testpassword
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23'
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Run tests with coverage (focused on testable packages)
+      env:
+        DATABASE_URL: postgres://test:testpassword@localhost:5432/musicapp_test?sslmode=disable
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET: test-jwt-secret-key-for-testing-only
+      run: |
+        go test -coverprofile=coverage.out ./pkg/utils/ ./internal/service/ ./internal/models/ ./internal/config/ ./internal/middleware/
+        go tool cover -func=coverage.out
+
+    - name: Check coverage threshold
+      run: |
+        coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+        echo "Coverage: ${coverage}%"
+        if (( $(echo "$coverage >= 80" | bc -l) )); then
+          echo "✅ Coverage meets 80% requirement"
+        else
+          echo "❌ Coverage ${coverage}% is below 80% requirement"
+          exit 1
+        fi
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+
+    - name: Run race detector (focused on testable packages)
+      env:
+        DATABASE_URL: postgres://test:testpassword@localhost:5432/musicapp_test?sslmode=disable
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET: test-jwt-secret-key-for-testing-only
+      run: go test -race ./pkg/utils/ ./internal/service/ ./internal/models/ ./internal/config/ ./internal/middleware/
+
+    - name: Run benchmarks (focused on testable packages)
+      env:
+        DATABASE_URL: postgres://test:testpassword@localhost:5432/musicapp_test?sslmode=disable
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET: test-jwt-secret-key-for-testing-only
+      run: go test -bench=. ./pkg/utils/ ./internal/service/ ./internal/models/ ./internal/config/ ./internal/middleware/

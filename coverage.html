@@ -1,0 +1,2347 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>config: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">musicapp/internal/config/config.go (100.0%)</option>
+				
+				<option value="file1">musicapp/internal/middleware/auth.go (74.5%)</option>
+				
+				<option value="file2">musicapp/internal/middleware/cors.go (100.0%)</option>
+				
+				<option value="file3">musicapp/internal/middleware/logging.go (100.0%)</option>
+				
+				<option value="file4">musicapp/internal/models/band.go (100.0%)</option>
+				
+				<option value="file5">musicapp/internal/models/follow.go (100.0%)</option>
+				
+				<option value="file6">musicapp/internal/models/post.go (100.0%)</option>
+				
+				<option value="file7">musicapp/internal/models/user.go (100.0%)</option>
+				
+				<option value="file8">musicapp/internal/service/auth.go (77.4%)</option>
+				
+				<option value="file9">musicapp/internal/service/band.go (80.9%)</option>
+				
+				<option value="file10">musicapp/internal/service/follow.go (1.6%)</option>
+				
+				<option value="file11">musicapp/internal/service/post.go (94.2%)</option>
+				
+				<option value="file12">musicapp/internal/service/user.go (90.4%)</option>
+				
+				<option value="file13">musicapp/pkg/utils/password.go (100.0%)</option>
+				
+				<option value="file14">musicapp/pkg/utils/response.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package config
+
+import (
+        "log"
+        "os"
+        "strconv"
+
+        "github.com/joho/godotenv"
+)
+
+type Config struct {
+        // Database
+        DatabaseURL string
+
+        // Redis
+        RedisURL string
+
+        // JWT
+        JWTSecret string
+
+        // AWS S3
+        AWSRegion          string
+        AWSAccessKeyID     string
+        AWSSecretAccessKey string
+        S3BucketName       string
+        S3CDNURL           string
+
+        // Server
+        Port        int
+        Environment string
+}
+
+func Load() *Config <span class="cov8" title="1">{
+        // Load .env file if it exists
+        if err := godotenv.Load(); err != nil </span><span class="cov8" title="1">{
+                log.Println("No .env file found, using environment variables")
+        }</span>
+
+        <span class="cov8" title="1">config := &amp;Config{
+                DatabaseURL:        getEnv("DATABASE_URL", "postgres://dev:devpassword@localhost:5432/musicapp?sslmode=disable"),
+                RedisURL:           getEnv("REDIS_URL", "redis://localhost:6379"),
+                JWTSecret:          getEnv("JWT_SECRET", "your-super-secret-jwt-key-change-in-production"),
+                AWSRegion:          getEnv("AWS_REGION", "us-east-1"),
+                AWSAccessKeyID:     getEnv("AWS_ACCESS_KEY_ID", ""),
+                AWSSecretAccessKey: getEnv("AWS_SECRET_ACCESS_KEY", ""),
+                S3BucketName:       getEnv("S3_BUCKET_NAME", ""),
+                S3CDNURL:           getEnv("S3_CDN_URL", ""),
+                Port:               getEnvAsInt("PORT", 8080),
+                Environment:        getEnv("ENVIRONMENT", "development"),
+        }
+
+        return config</span>
+}
+
+func getEnv(key, defaultValue string) string <span class="cov8" title="1">{
+        if value := os.Getenv(key); value != "" </span><span class="cov8" title="1">{
+                return value
+        }</span>
+        <span class="cov8" title="1">return defaultValue</span>
+}
+
+func getEnvAsInt(key string, defaultValue int) int <span class="cov8" title="1">{
+        if value := os.Getenv(key); value != "" </span><span class="cov8" title="1">{
+                if intValue, err := strconv.Atoi(value); err == nil </span><span class="cov8" title="1">{
+                        return intValue
+                }</span>
+        }
+        <span class="cov8" title="1">return defaultValue</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package middleware
+
+import (
+        "context"
+        "fmt"
+        "net/http"
+        "strings"
+        "time"
+
+        "musicapp/internal/cache"
+
+        "github.com/golang-jwt/jwt/v5"
+)
+
+type Claims struct {
+        UserID   string `json:"user_id"`
+        Username string `json:"username"`
+        jwt.RegisteredClaims
+}
+
+type AuthMiddleware struct {
+        jwtSecret []byte
+        cache     *cache.Cache
+}
+
+func NewAuthMiddleware(jwtSecret string, cache *cache.Cache) *AuthMiddleware <span class="cov8" title="1">{
+        return &amp;AuthMiddleware{
+                jwtSecret: []byte(jwtSecret),
+                cache:     cache,
+        }
+}</span>
+
+func (a *AuthMiddleware) RequireAuth(next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                authHeader := r.Header.Get("Authorization")
+                if authHeader == "" </span><span class="cov8" title="1">{
+                        http.Error(w, "Authorization header required", http.StatusUnauthorized)
+                        return
+                }</span>
+
+                // Check if it's a Bearer token
+                <span class="cov8" title="1">parts := strings.SplitN(authHeader, " ", 2)
+                if len(parts) != 2 || parts[0] != "Bearer" </span><span class="cov8" title="1">{
+                        http.Error(w, "Invalid authorization header format", http.StatusUnauthorized)
+                        return
+                }</span>
+
+                <span class="cov8" title="1">tokenString := parts[1]
+
+                // Parse and validate the token
+                claims, err := a.ValidateToken(tokenString)
+                if err != nil </span><span class="cov8" title="1">{
+                        http.Error(w, "Invalid token", http.StatusUnauthorized)
+                        return
+                }</span>
+
+                // Check if token is blacklisted
+                <span class="cov0" title="0">isBlacklisted, err := a.cache.IsBlacklisted(r.Context(), claims.ID)
+                if err != nil </span><span class="cov0" title="0">{
+                        http.Error(w, "Internal server error", http.StatusInternalServerError)
+                        return
+                }</span>
+                <span class="cov0" title="0">if isBlacklisted </span><span class="cov0" title="0">{
+                        http.Error(w, "Token has been revoked", http.StatusUnauthorized)
+                        return
+                }</span>
+
+                // Add user info to context
+                <span class="cov0" title="0">ctx := context.WithValue(r.Context(), "user_id", claims.UserID)
+                ctx = context.WithValue(ctx, "username", claims.Username)
+                ctx = context.WithValue(ctx, "jti", claims.ID)
+
+                next.ServeHTTP(w, r.WithContext(ctx))</span>
+        })
+}
+
+func (a *AuthMiddleware) ValidateToken(tokenString string) (*Claims, error) <span class="cov8" title="1">{
+        token, err := jwt.ParseWithClaims(tokenString, &amp;Claims{}, func(token *jwt.Token) (interface{}, error) </span><span class="cov8" title="1">{
+                // Validate the signing method
+                if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+                }</span>
+                <span class="cov8" title="1">return a.jwtSecret, nil</span>
+        })
+
+        <span class="cov8" title="1">if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">claims, ok := token.Claims.(*Claims)
+        if !ok || !token.Valid </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid token")
+        }</span>
+
+        <span class="cov8" title="1">return claims, nil</span>
+}
+
+func (a *AuthMiddleware) GenerateToken(userID, username string) (string, error) <span class="cov8" title="1">{
+        claims := &amp;Claims{
+                UserID:   userID,
+                Username: username,
+                RegisteredClaims: jwt.RegisteredClaims{
+                        ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // 24 hours
+                        IssuedAt:  jwt.NewNumericDate(time.Now()),
+                        ID:        fmt.Sprintf("%s_%d", userID, time.Now().Unix()), // Unique JTI
+                },
+        }
+
+        token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+        return token.SignedString(a.jwtSecret)
+}</span>
+
+func (a *AuthMiddleware) RequireBandAdmin(next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                // This middleware should be used after RequireAuth
+                // TODO: Check if user is admin of the band
+                // For now, we'll implement this in the handler level
+                // This is a placeholder for the band admin check
+
+                next.ServeHTTP(w, r)
+        }</span>)
+}
+
+// Helper function to get user ID from context
+func GetUserIDFromContext(ctx context.Context) (string, bool) <span class="cov8" title="1">{
+        userID, ok := ctx.Value("user_id").(string)
+        return userID, ok
+}</span>
+
+// Helper function to get username from context
+func GetUsernameFromContext(ctx context.Context) (string, bool) <span class="cov8" title="1">{
+        username, ok := ctx.Value("username").(string)
+        return username, ok
+}</span>
+
+// Helper function to get JTI from context
+func GetJTIFromContext(ctx context.Context) (string, bool) <span class="cov8" title="1">{
+        jti, ok := ctx.Value("jti").(string)
+        return jti, ok
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package middleware
+
+import (
+        "net/http"
+)
+
+func CORS(next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                // Set CORS headers
+                w.Header().Set("Access-Control-Allow-Origin", "*")
+                w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+                w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+                // Handle preflight requests
+                if r.Method == "OPTIONS" </span><span class="cov8" title="1">{
+                        w.WriteHeader(http.StatusOK)
+                        return
+                }</span>
+
+                <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+        })
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package middleware
+
+import (
+        "log"
+        "net/http"
+        "time"
+)
+
+type LoggingMiddleware struct{}
+
+func NewLoggingMiddleware() *LoggingMiddleware <span class="cov8" title="1">{
+        return &amp;LoggingMiddleware{}
+}</span>
+
+func (l *LoggingMiddleware) Logging(next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                start := time.Now()
+
+                // Create a response writer wrapper to capture status code
+                wrapped := &amp;responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
+                next.ServeHTTP(wrapped, r)
+
+                duration := time.Since(start)
+                log.Printf(
+                        "%s %s %d %v",
+                        r.Method,
+                        r.URL.Path,
+                        wrapped.statusCode,
+                        duration,
+                )
+        }</span>)
+}
+
+type responseWriter struct {
+        http.ResponseWriter
+        statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) <span class="cov8" title="1">{
+        rw.statusCode = code
+        rw.ResponseWriter.WriteHeader(code)
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package models
+
+import (
+        "time"
+
+        "github.com/google/uuid"
+)
+
+type Band struct {
+        ID                uuid.UUID `json:"id" db:"id"`
+        Name              string    `json:"name" db:"name"`
+        Bio               *string   `json:"bio" db:"bio"`
+        ProfilePictureURL *string   `json:"profile_picture_url" db:"profile_picture_url"`
+        Location          *Location `json:"location" db:"location"`
+        City              *string   `json:"city" db:"city"`
+        Country           *string   `json:"country" db:"country"`
+        Genres            []string  `json:"genres" db:"genres"`
+        LookingFor        []string  `json:"looking_for" db:"looking_for"`
+        CreatedAt         time.Time `json:"created_at" db:"created_at"`
+        UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
+}
+
+type BandMember struct {
+        ID       uuid.UUID `json:"id" db:"id"`
+        BandID   uuid.UUID `json:"band_id" db:"band_id"`
+        UserID   uuid.UUID `json:"user_id" db:"user_id"`
+        Role     *string   `json:"role" db:"role"`
+        JoinedAt time.Time `json:"joined_at" db:"joined_at"`
+        User     *User     `json:"user,omitempty"`
+        Band     *Band     `json:"band,omitempty"`
+}
+
+type CreateBandRequest struct {
+        Name       string    `json:"name" validate:"required,min=1,max=100"`
+        Bio        *string   `json:"bio,omitempty"`
+        Location   *Location `json:"location,omitempty"`
+        City       *string   `json:"city,omitempty"`
+        Country    *string   `json:"country,omitempty"`
+        Genres     []string  `json:"genres,omitempty"`
+        LookingFor []string  `json:"looking_for,omitempty"`
+}
+
+type UpdateBandRequest struct {
+        Name       *string   `json:"name,omitempty"`
+        Bio        *string   `json:"bio,omitempty"`
+        Location   *Location `json:"location,omitempty"`
+        City       *string   `json:"city,omitempty"`
+        Country    *string   `json:"country,omitempty"`
+        Genres     []string  `json:"genres,omitempty"`
+        LookingFor []string  `json:"looking_for,omitempty"`
+}
+
+type BandResponse struct {
+        ID                uuid.UUID    `json:"id"`
+        Name              string       `json:"name"`
+        Bio               *string      `json:"bio"`
+        ProfilePictureURL *string      `json:"profile_picture_url"`
+        Location          *Location    `json:"location"`
+        City              *string      `json:"city"`
+        Country           *string      `json:"country"`
+        Genres            []string     `json:"genres"`
+        LookingFor        []string     `json:"looking_for"`
+        CreatedAt         time.Time    `json:"created_at"`
+        UpdatedAt         time.Time    `json:"updated_at"`
+        Members           []BandMember `json:"members,omitempty"`
+        MemberCount       int          `json:"member_count,omitempty"`
+}
+
+func (b *Band) ToResponse() *BandResponse <span class="cov8" title="1">{
+        return &amp;BandResponse{
+                ID:                b.ID,
+                Name:              b.Name,
+                Bio:               b.Bio,
+                ProfilePictureURL: b.ProfilePictureURL,
+                Location:          b.Location,
+                City:              b.City,
+                Country:           b.Country,
+                Genres:            b.Genres,
+                LookingFor:        b.LookingFor,
+                CreatedAt:         b.CreatedAt,
+                UpdatedAt:         b.UpdatedAt,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package models
+
+import (
+        "time"
+
+        "github.com/google/uuid"
+)
+
+type Follow struct {
+        ID              uuid.UUID  `json:"id" db:"id"`
+        FollowerID      uuid.UUID  `json:"follower_id" db:"follower_id"`
+        FollowingType   string     `json:"following_type" db:"following_type"`
+        FollowingUserID *uuid.UUID `json:"following_user_id" db:"following_user_id"`
+        FollowingBandID *uuid.UUID `json:"following_band_id" db:"following_band_id"`
+        CreatedAt       time.Time  `json:"created_at" db:"created_at"`
+
+        // Joined data
+        Follower      *User `json:"follower,omitempty"`
+        FollowingUser *User `json:"following_user,omitempty"`
+        FollowingBand *Band `json:"following_band,omitempty"`
+}
+
+type FollowRequest struct {
+        FollowingType   string     `json:"following_type" validate:"required,oneof=user band"`
+        FollowingUserID *uuid.UUID `json:"following_user_id,omitempty"`
+        FollowingBandID *uuid.UUID `json:"following_band_id,omitempty"`
+}
+
+type FollowResponse struct {
+        ID              uuid.UUID  `json:"id"`
+        FollowerID      uuid.UUID  `json:"follower_id"`
+        FollowingType   string     `json:"following_type"`
+        FollowingUserID *uuid.UUID `json:"following_user_id"`
+        FollowingBandID *uuid.UUID `json:"following_band_id"`
+        CreatedAt       time.Time  `json:"created_at"`
+        Follower        *User      `json:"follower,omitempty"`
+        FollowingUser   *User      `json:"following_user,omitempty"`
+        FollowingBand   *Band      `json:"following_band,omitempty"`
+}
+
+func (f *Follow) ToResponse() *FollowResponse <span class="cov8" title="1">{
+        return &amp;FollowResponse{
+                ID:              f.ID,
+                FollowerID:      f.FollowerID,
+                FollowingType:   f.FollowingType,
+                FollowingUserID: f.FollowingUserID,
+                FollowingBandID: f.FollowingBandID,
+                CreatedAt:       f.CreatedAt,
+                Follower:        f.Follower,
+                FollowingUser:   f.FollowingUser,
+                FollowingBand:   f.FollowingBand,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package models
+
+import (
+        "time"
+
+        "github.com/google/uuid"
+)
+
+type Post struct {
+        ID         uuid.UUID  `json:"id" db:"id"`
+        AuthorID   *uuid.UUID `json:"author_id" db:"author_id"`
+        AuthorType string     `json:"author_type" db:"author_type"`
+        BandID     *uuid.UUID `json:"band_id" db:"band_id"`
+        UserID     *uuid.UUID `json:"user_id" db:"user_id"`
+        Content    string     `json:"content" db:"content"`
+        MediaURLs  []string   `json:"media_urls" db:"media_urls"`
+        MediaTypes []string   `json:"media_types" db:"media_types"`
+        CreatedAt  time.Time  `json:"created_at" db:"created_at"`
+        UpdatedAt  time.Time  `json:"updated_at" db:"updated_at"`
+
+        // Joined data
+        Author       interface{} `json:"author,omitempty"` // User or Band
+        LikesCount   int         `json:"likes_count,omitempty"`
+        RepostsCount int         `json:"reposts_count,omitempty"`
+        IsLiked      bool        `json:"is_liked,omitempty"`
+        IsReposted   bool        `json:"is_reposted,omitempty"`
+}
+
+type CreatePostRequest struct {
+        Content    string   `json:"content" validate:"required,min=1,max=2000"`
+        MediaURLs  []string `json:"media_urls,omitempty"`
+        MediaTypes []string `json:"media_types,omitempty"`
+}
+
+type UpdatePostRequest struct {
+        Content    *string  `json:"content,omitempty" validate:"omitempty,min=1,max=2000"`
+        MediaURLs  []string `json:"media_urls,omitempty"`
+        MediaTypes []string `json:"media_types,omitempty"`
+}
+
+type PostResponse struct {
+        ID           uuid.UUID   `json:"id"`
+        AuthorID     *uuid.UUID  `json:"author_id"`
+        AuthorType   string      `json:"author_type"`
+        BandID       *uuid.UUID  `json:"band_id"`
+        UserID       *uuid.UUID  `json:"user_id"`
+        Content      string      `json:"content"`
+        MediaURLs    []string    `json:"media_urls"`
+        MediaTypes   []string    `json:"media_types"`
+        CreatedAt    time.Time   `json:"created_at"`
+        UpdatedAt    time.Time   `json:"updated_at"`
+        Author       interface{} `json:"author,omitempty"`
+        LikesCount   int         `json:"likes_count"`
+        RepostsCount int         `json:"reposts_count"`
+        IsLiked      bool        `json:"is_liked"`
+        IsReposted   bool        `json:"is_reposted"`
+}
+
+func (p *Post) ToResponse() *PostResponse <span class="cov8" title="1">{
+        return &amp;PostResponse{
+                ID:           p.ID,
+                AuthorID:     p.AuthorID,
+                AuthorType:   p.AuthorType,
+                BandID:       p.BandID,
+                UserID:       p.UserID,
+                Content:      p.Content,
+                MediaURLs:    p.MediaURLs,
+                MediaTypes:   p.MediaTypes,
+                CreatedAt:    p.CreatedAt,
+                UpdatedAt:    p.UpdatedAt,
+                Author:       p.Author,
+                LikesCount:   p.LikesCount,
+                RepostsCount: p.RepostsCount,
+                IsLiked:      p.IsLiked,
+                IsReposted:   p.IsReposted,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package models
+
+import (
+        "time"
+
+        "github.com/google/uuid"
+)
+
+type User struct {
+        ID                uuid.UUID `json:"id" db:"id"`
+        Username          string    `json:"username" db:"username"`
+        Email             string    `json:"email" db:"email"`
+        PasswordHash      string    `json:"-" db:"password_hash"`
+        DisplayName       *string   `json:"display_name" db:"display_name"`
+        Bio               *string   `json:"bio" db:"bio"`
+        ProfilePictureURL *string   `json:"profile_picture_url" db:"profile_picture_url"`
+        Location          *Location `json:"location" db:"location"`
+        City              *string   `json:"city" db:"city"`
+        Country           *string   `json:"country" db:"country"`
+        Genres            []string  `json:"genres" db:"genres"`
+        Skills            []string  `json:"skills" db:"skills"`
+        SpotifyURL        *string   `json:"spotify_url" db:"spotify_url"`
+        SoundcloudURL     *string   `json:"soundcloud_url" db:"soundcloud_url"`
+        InstagramHandle   *string   `json:"instagram_handle" db:"instagram_handle"`
+        CreatedAt         time.Time `json:"created_at" db:"created_at"`
+        UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
+}
+
+type Location struct {
+        Latitude  float64 `json:"latitude"`
+        Longitude float64 `json:"longitude"`
+}
+
+type CreateUserRequest struct {
+        Username string    `json:"username" validate:"required,min=3,max=50"`
+        Email    string    `json:"email" validate:"required,email"`
+        Password string    `json:"password" validate:"required,min=8"`
+        Location *Location `json:"location,omitempty"`
+        City     *string   `json:"city,omitempty"`
+        Country  *string   `json:"country,omitempty"`
+}
+
+type UpdateUserRequest struct {
+        DisplayName     *string   `json:"display_name,omitempty"`
+        Bio             *string   `json:"bio,omitempty"`
+        Location        *Location `json:"location,omitempty"`
+        City            *string   `json:"city,omitempty"`
+        Country         *string   `json:"country,omitempty"`
+        Genres          []string  `json:"genres,omitempty"`
+        Skills          []string  `json:"skills,omitempty"`
+        SpotifyURL      *string   `json:"spotify_url,omitempty"`
+        SoundcloudURL   *string   `json:"soundcloud_url,omitempty"`
+        InstagramHandle *string   `json:"instagram_handle,omitempty"`
+}
+
+type UserResponse struct {
+        ID                uuid.UUID `json:"id"`
+        Username          string    `json:"username"`
+        Email             string    `json:"email"`
+        DisplayName       *string   `json:"display_name"`
+        Bio               *string   `json:"bio"`
+        ProfilePictureURL *string   `json:"profile_picture_url"`
+        Location          *Location `json:"location"`
+        City              *string   `json:"city"`
+        Country           *string   `json:"country"`
+        Genres            []string  `json:"genres"`
+        Skills            []string  `json:"skills"`
+        SpotifyURL        *string   `json:"spotify_url"`
+        SoundcloudURL     *string   `json:"soundcloud_url"`
+        InstagramHandle   *string   `json:"instagram_handle"`
+        CreatedAt         time.Time `json:"created_at"`
+        UpdatedAt         time.Time `json:"updated_at"`
+}
+
+func (u *User) ToResponse() *UserResponse <span class="cov8" title="1">{
+        return &amp;UserResponse{
+                ID:                u.ID,
+                Username:          u.Username,
+                Email:             u.Email,
+                DisplayName:       u.DisplayName,
+                Bio:               u.Bio,
+                ProfilePictureURL: u.ProfilePictureURL,
+                Location:          u.Location,
+                City:              u.City,
+                Country:           u.Country,
+                Genres:            u.Genres,
+                Skills:            u.Skills,
+                SpotifyURL:        u.SpotifyURL,
+                SoundcloudURL:     u.SoundcloudURL,
+                InstagramHandle:   u.InstagramHandle,
+                CreatedAt:         u.CreatedAt,
+                UpdatedAt:         u.UpdatedAt,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package service
+
+import (
+        "context"
+        "fmt"
+        "time"
+
+        "musicapp/internal/cache"
+        "musicapp/internal/middleware"
+        "musicapp/internal/models"
+        "musicapp/internal/repository"
+        "musicapp/pkg/utils"
+
+        "github.com/google/uuid"
+)
+
+// Interfaces define contracts for dependencies
+// This follows Go's "Accept interfaces, return structs" principle
+type UserRepository interface {
+        GetByEmail(ctx context.Context, email string) (*models.User, error)
+        GetByUsername(ctx context.Context, username string) (*models.User, error)
+        GetByID(ctx context.Context, id uuid.UUID) (*models.User, error)
+        Create(ctx context.Context, user *models.User) error
+}
+
+type Cache interface {
+        SetSession(ctx context.Context, userID string, data interface{}, expiration time.Duration) error
+        DeleteSession(ctx context.Context, userID string) error
+        IsBlacklisted(ctx context.Context, jti string) (bool, error)
+        AddToBlacklist(ctx context.Context, jti string, expiration time.Duration) error
+}
+
+type AuthMiddleware interface {
+        GenerateToken(userID, username string) (string, error)
+        ValidateToken(tokenString string) (*middleware.Claims, error)
+}
+
+// AuthService now depends on interfaces, not concrete types
+// This makes it much easier to test and more flexible
+type AuthService struct {
+        userRepo       UserRepository
+        cache          Cache
+        authMiddleware AuthMiddleware
+}
+
+// NewAuthService creates a new AuthService with dependency injection
+// This follows the dependency injection pattern for better testability
+func NewAuthService(userRepo UserRepository, cache Cache, authMiddleware AuthMiddleware) *AuthService <span class="cov8" title="1">{
+        return &amp;AuthService{
+                userRepo:       userRepo,
+                cache:          cache,
+                authMiddleware: authMiddleware,
+        }
+}</span>
+
+// RegisterUser registers a new user and returns JWT token
+func (s *AuthService) RegisterUser(ctx context.Context, req *models.CreateUserRequest) (*models.User, string, error) <span class="cov8" title="1">{
+        // Check if user already exists
+        existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
+        if err == nil &amp;&amp; existingUser != nil </span><span class="cov8" title="1">{
+                return nil, "", fmt.Errorf("user with email %s already exists", req.Email)
+        }</span>
+
+        <span class="cov8" title="1">existingUser, err = s.userRepo.GetByUsername(ctx, req.Username)
+        if err == nil &amp;&amp; existingUser != nil </span><span class="cov8" title="1">{
+                return nil, "", fmt.Errorf("username %s already taken", req.Username)
+        }</span>
+
+        // Hash password
+        <span class="cov8" title="1">hashedPassword, err := utils.HashPassword(req.Password)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, "", fmt.Errorf("failed to hash password: %w", err)
+        }</span>
+
+        // Create user
+        <span class="cov8" title="1">user := &amp;models.User{
+                ID:           uuid.New(),
+                Username:     req.Username,
+                Email:        req.Email,
+                PasswordHash: hashedPassword,
+                Location:     req.Location,
+                City:         req.City,
+                Country:      req.Country,
+        }
+
+        if err := s.userRepo.Create(ctx, user); err != nil </span><span class="cov8" title="1">{
+                return nil, "", fmt.Errorf("failed to create user: %w", err)
+        }</span>
+
+        // Generate JWT token
+        <span class="cov8" title="1">token, err := s.authMiddleware.GenerateToken(user.ID.String(), user.Username)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, "", fmt.Errorf("failed to generate token: %w", err)
+        }</span>
+
+        // Store session in Redis
+        <span class="cov8" title="1">sessionData := map[string]interface{}{
+                "user_id":  user.ID.String(),
+                "username": user.Username,
+                "email":    user.Email,
+        }
+        if err := s.cache.SetSession(ctx, user.ID.String(), sessionData, 24*time.Hour); err != nil </span>{<span class="cov0" title="0">
+                // Log error but don't fail the request
+                // TODO: Add proper logging
+        }</span>
+
+        <span class="cov8" title="1">return user, token, nil</span>
+}
+
+// LoginUser authenticates user and returns JWT token
+func (s *AuthService) LoginUser(ctx context.Context, email, password string) (*models.User, string, error) <span class="cov8" title="1">{
+        // Get user by email
+        user, err := s.userRepo.GetByEmail(ctx, email)
+        if err != nil || user == nil </span><span class="cov8" title="1">{
+                return nil, "", fmt.Errorf("invalid credentials")
+        }</span>
+
+        // Check password
+        <span class="cov8" title="1">if !utils.CheckPasswordHash(password, user.PasswordHash) </span><span class="cov8" title="1">{
+                return nil, "", fmt.Errorf("invalid credentials")
+        }</span>
+
+        // Generate JWT token
+        <span class="cov8" title="1">token, err := s.authMiddleware.GenerateToken(user.ID.String(), user.Username)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, "", fmt.Errorf("failed to generate token: %w", err)
+        }</span>
+
+        // Store session in Redis
+        <span class="cov8" title="1">sessionData := map[string]interface{}{
+                "user_id":  user.ID.String(),
+                "username": user.Username,
+                "email":    user.Email,
+        }
+        if err := s.cache.SetSession(ctx, user.ID.String(), sessionData, 24*time.Hour); err != nil </span>{<span class="cov0" title="0">
+                // Log error but don't fail the request
+                // TODO: Add proper logging
+        }</span>
+
+        <span class="cov8" title="1">return user, token, nil</span>
+}
+
+// LogoutUser invalidates JWT token
+func (s *AuthService) LogoutUser(ctx context.Context, jti, userID string) error <span class="cov8" title="1">{
+        // Add token to blacklist (24 hours from now)
+        if err := s.cache.AddToBlacklist(ctx, jti, 24*time.Hour); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to blacklist token: %w", err)
+        }</span>
+
+        // Clear session
+        <span class="cov8" title="1">if err := s.cache.DeleteSession(ctx, userID); err != nil </span>{<span class="cov8" title="1">
+                // Log error but don't fail the request
+                // TODO: Add proper logging
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// ValidateToken validates JWT token and returns user info
+func (s *AuthService) ValidateToken(ctx context.Context, tokenString string) (*models.User, error) <span class="cov8" title="1">{
+        // Parse and validate the token
+        claims, err := s.authMiddleware.ValidateToken(tokenString)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid token: %w", err)
+        }</span>
+
+        // Check if token is blacklisted
+        <span class="cov8" title="1">isBlacklisted, err := s.cache.IsBlacklisted(ctx, claims.ID)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to check token blacklist: %w", err)
+        }</span>
+        <span class="cov8" title="1">if isBlacklisted </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("token has been revoked")
+        }</span>
+
+        // Get user from database
+        <span class="cov8" title="1">userID, err := uuid.Parse(claims.UserID)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid user ID in token: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">user, err := s.userRepo.GetByID(ctx, userID)
+        if err != nil || user == nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("user not found: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return user, nil</span>
+}
+
+// Adapter structs implement interfaces for existing concrete types
+// This allows us to use the existing repository/cache/middleware with the new interface-based service
+
+// UserRepositoryAdapter adapts repository.UserRepository to UserRepository interface
+type UserRepositoryAdapter struct {
+        repo *repository.UserRepository
+}
+
+func NewUserRepositoryAdapter(repo *repository.UserRepository) UserRepository <span class="cov0" title="0">{
+        return &amp;UserRepositoryAdapter{repo: repo}
+}</span>
+
+func (a *UserRepositoryAdapter) GetByEmail(ctx context.Context, email string) (*models.User, error) <span class="cov0" title="0">{
+        return a.repo.GetByEmail(ctx, email)
+}</span>
+
+func (a *UserRepositoryAdapter) GetByUsername(ctx context.Context, username string) (*models.User, error) <span class="cov0" title="0">{
+        return a.repo.GetByUsername(ctx, username)
+}</span>
+
+func (a *UserRepositoryAdapter) GetByID(ctx context.Context, id uuid.UUID) (*models.User, error) <span class="cov0" title="0">{
+        return a.repo.GetByID(ctx, id)
+}</span>
+
+func (a *UserRepositoryAdapter) Create(ctx context.Context, user *models.User) error <span class="cov0" title="0">{
+        return a.repo.Create(ctx, user)
+}</span>
+
+// CacheAdapter adapts cache.Cache to Cache interface
+type CacheAdapter struct {
+        cache *cache.Cache
+}
+
+func NewCacheAdapter(cache *cache.Cache) Cache <span class="cov0" title="0">{
+        return &amp;CacheAdapter{cache: cache}
+}</span>
+
+func (a *CacheAdapter) SetSession(ctx context.Context, userID string, data interface{}, expiration time.Duration) error <span class="cov0" title="0">{
+        return a.cache.SetSession(ctx, userID, data, expiration)
+}</span>
+
+func (a *CacheAdapter) DeleteSession(ctx context.Context, userID string) error <span class="cov0" title="0">{
+        return a.cache.DeleteSession(ctx, userID)
+}</span>
+
+func (a *CacheAdapter) IsBlacklisted(ctx context.Context, jti string) (bool, error) <span class="cov0" title="0">{
+        return a.cache.IsBlacklisted(ctx, jti)
+}</span>
+
+func (a *CacheAdapter) AddToBlacklist(ctx context.Context, jti string, expiration time.Duration) error <span class="cov0" title="0">{
+        return a.cache.AddToBlacklist(ctx, jti, expiration)
+}</span>
+
+// AuthMiddlewareAdapter adapts middleware.AuthMiddleware to AuthMiddleware interface
+type AuthMiddlewareAdapter struct {
+        middleware *middleware.AuthMiddleware
+}
+
+func NewAuthMiddlewareAdapter(middleware *middleware.AuthMiddleware) AuthMiddleware <span class="cov0" title="0">{
+        return &amp;AuthMiddlewareAdapter{middleware: middleware}
+}</span>
+
+func (a *AuthMiddlewareAdapter) GenerateToken(userID, username string) (string, error) <span class="cov0" title="0">{
+        return a.middleware.GenerateToken(userID, username)
+}</span>
+
+func (a *AuthMiddlewareAdapter) ValidateToken(tokenString string) (*middleware.Claims, error) <span class="cov0" title="0">{
+        return a.middleware.ValidateToken(tokenString)
+}</span>
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package service
+
+import (
+        "bytes"
+        "context"
+        "fmt"
+        "io"
+
+        "musicapp/internal/models"
+        "musicapp/internal/repository"
+        "musicapp/internal/storage"
+
+        "github.com/google/uuid"
+)
+
+// Extended interfaces for BandService (building on existing interfaces from auth.go)
+type BandRepository interface {
+        Create(ctx context.Context, band *models.Band) error
+        GetByID(ctx context.Context, id uuid.UUID) (*models.Band, error)
+        Update(ctx context.Context, band *models.Band) error
+        Delete(ctx context.Context, id uuid.UUID) error
+        GetNearby(ctx context.Context, lat, lng float64, radiusKm, limit int) ([]*models.Band, error)
+        AddMember(ctx context.Context, bandID, userID uuid.UUID, role string) error
+        RemoveMember(ctx context.Context, bandID, userID uuid.UUID) error
+        GetMembers(ctx context.Context, bandID uuid.UUID) ([]*models.BandMember, error)
+        IsMember(ctx context.Context, bandID, userID uuid.UUID) (bool, error)
+        IsAdmin(ctx context.Context, bandID, userID uuid.UUID) (bool, error)
+        GetUserBands(ctx context.Context, userID uuid.UUID) ([]*models.BandMember, error)
+        GetAll(ctx context.Context, limit, offset int) ([]*models.Band, error)
+}
+
+type UserRepositoryForBand interface {
+        GetByID(ctx context.Context, id uuid.UUID) (*models.User, error)
+}
+
+type S3ClientForBand interface {
+        ValidateImageFile(filename string, size int64) error
+        UploadImage(ctx context.Context, userID, filename string, file io.Reader, size int64) (*storage.UploadResult, error)
+}
+
+// BandService now depends on interfaces, not concrete types
+type BandService struct {
+        bandRepo BandRepository
+        userRepo UserRepositoryForBand
+        cache    Cache
+        s3Client S3ClientForBand
+}
+
+func NewBandService(bandRepo BandRepository, userRepo UserRepositoryForBand, cache Cache, s3Client S3ClientForBand) *BandService <span class="cov8" title="1">{
+        return &amp;BandService{
+                bandRepo: bandRepo,
+                userRepo: userRepo,
+                cache:    cache,
+                s3Client: s3Client,
+        }
+}</span>
+
+// CreateBand creates a new band
+func (s *BandService) CreateBand(ctx context.Context, userID uuid.UUID, req *models.CreateBandRequest) (*models.Band, error) <span class="cov8" title="1">{
+        if req.Name == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("band name is required")
+        }</span>
+
+        <span class="cov8" title="1">if len(req.Name) &gt; 100 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("band name too long (max 100 characters)")
+        }</span>
+
+        // Create band
+        <span class="cov8" title="1">band := &amp;models.Band{
+                ID:         uuid.New(),
+                Name:       req.Name,
+                Bio:        req.Bio,
+                Location:   req.Location,
+                City:       req.City,
+                Country:    req.Country,
+                Genres:     req.Genres,
+                LookingFor: req.LookingFor,
+        }
+
+        if err := s.bandRepo.Create(ctx, band); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to create band: %w", err)
+        }</span>
+
+        // Add creator as admin member
+        <span class="cov8" title="1">if err := s.bandRepo.AddMember(ctx, band.ID, userID, "Admin"); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to add creator as member: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return band, nil</span>
+}
+
+// GetBand retrieves a band by ID
+func (s *BandService) GetBand(ctx context.Context, bandID uuid.UUID) (*models.Band, error) <span class="cov8" title="1">{
+        band, err := s.bandRepo.GetByID(ctx, bandID)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("band not found: %w", err)
+        }</span>
+
+        // Get members
+        <span class="cov8" title="1">members, err := s.bandRepo.GetMembers(ctx, bandID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to retrieve band members: %w", err)
+        }</span>
+
+        // Add members to response (this would need to be handled in the response model)
+        <span class="cov8" title="1">_ = members // For now, just ignore members in service layer
+
+        return band, nil</span>
+}
+
+// UpdateBand updates band details
+func (s *BandService) UpdateBand(ctx context.Context, bandID, userID uuid.UUID, req *models.UpdateBandRequest) (*models.Band, error) <span class="cov8" title="1">{
+        // Check if user is admin of the band
+        isAdmin, err := s.bandRepo.IsAdmin(ctx, bandID, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to check permissions: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if !isAdmin </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("only band admins can update band details")
+        }</span>
+
+        // Get existing band
+        <span class="cov8" title="1">band, err := s.bandRepo.GetByID(ctx, bandID)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("band not found: %w", err)
+        }</span>
+
+        // Update fields
+        <span class="cov8" title="1">if req.Name != nil </span><span class="cov8" title="1">{
+                if *req.Name == "" </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("band name cannot be empty")
+                }</span>
+                <span class="cov8" title="1">if len(*req.Name) &gt; 100 </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("band name too long (max 100 characters)")
+                }</span>
+                <span class="cov8" title="1">band.Name = *req.Name</span>
+        }
+        <span class="cov8" title="1">if req.Bio != nil </span><span class="cov8" title="1">{
+                band.Bio = req.Bio
+        }</span>
+        <span class="cov8" title="1">if req.Location != nil </span><span class="cov0" title="0">{
+                band.Location = req.Location
+        }</span>
+        <span class="cov8" title="1">if req.City != nil </span><span class="cov8" title="1">{
+                band.City = req.City
+        }</span>
+        <span class="cov8" title="1">if req.Country != nil </span><span class="cov8" title="1">{
+                band.Country = req.Country
+        }</span>
+        <span class="cov8" title="1">if req.Genres != nil </span><span class="cov8" title="1">{
+                band.Genres = req.Genres
+        }</span>
+        <span class="cov8" title="1">if req.LookingFor != nil </span><span class="cov8" title="1">{
+                band.LookingFor = req.LookingFor
+        }</span>
+
+        <span class="cov8" title="1">if err := s.bandRepo.Update(ctx, band); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to update band: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return band, nil</span>
+}
+
+// DeleteBand deletes a band
+func (s *BandService) DeleteBand(ctx context.Context, bandID, userID uuid.UUID) error <span class="cov8" title="1">{
+        // Check if user is admin of the band
+        isAdmin, err := s.bandRepo.IsAdmin(ctx, bandID, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to check permissions: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if !isAdmin </span><span class="cov8" title="1">{
+                return fmt.Errorf("only band admins can delete the band")
+        }</span>
+
+        <span class="cov8" title="1">if err := s.bandRepo.Delete(ctx, bandID); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to delete band: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// JoinBand adds a user to a band
+func (s *BandService) JoinBand(ctx context.Context, bandID, userID uuid.UUID) error <span class="cov8" title="1">{
+        // Check if band exists
+        _, err := s.bandRepo.GetByID(ctx, bandID)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("band not found: %w", err)
+        }</span>
+
+        // Check if user is already a member
+        <span class="cov8" title="1">isMember, err := s.bandRepo.IsMember(ctx, bandID, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to check membership: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if isMember </span><span class="cov8" title="1">{
+                return fmt.Errorf("user is already a member of this band")
+        }</span>
+
+        // Add user as member
+        <span class="cov8" title="1">if err := s.bandRepo.AddMember(ctx, bandID, userID, "Member"); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to join band: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// LeaveBand removes a user from a band
+func (s *BandService) LeaveBand(ctx context.Context, bandID, userID uuid.UUID) error <span class="cov8" title="1">{
+        // Check if user is a member
+        isMember, err := s.bandRepo.IsMember(ctx, bandID, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to check membership: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if !isMember </span><span class="cov8" title="1">{
+                return fmt.Errorf("user is not a member of this band")
+        }</span>
+
+        // Remove user from band
+        <span class="cov8" title="1">if err := s.bandRepo.RemoveMember(ctx, bandID, userID); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to leave band: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// GetBandMembers retrieves all members of a band
+func (s *BandService) GetBandMembers(ctx context.Context, bandID uuid.UUID) ([]*models.BandMember, error) <span class="cov8" title="1">{
+        members, err := s.bandRepo.GetMembers(ctx, bandID)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to retrieve band members: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return members, nil</span>
+}
+
+// GetNearbyBands finds bands within a specified radius
+func (s *BandService) GetNearbyBands(ctx context.Context, lat, lng float64, radiusKm, limit int) ([]*models.Band, error) <span class="cov8" title="1">{
+        if lat &lt; -90 || lat &gt; 90 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid latitude: %f", lat)
+        }</span>
+        <span class="cov8" title="1">if lng &lt; -180 || lng &gt; 180 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid longitude: %f", lng)
+        }</span>
+        <span class="cov8" title="1">if radiusKm &lt;= 0 || radiusKm &gt; 500 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid radius: %d km (must be 1-500)", radiusKm)
+        }</span>
+        <span class="cov8" title="1">if limit &lt;= 0 || limit &gt; 100 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid limit: %d (must be 1-100)", limit)
+        }</span>
+
+        <span class="cov8" title="1">bands, err := s.bandRepo.GetNearby(ctx, lat, lng, radiusKm, limit)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to retrieve nearby bands: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return bands, nil</span>
+}
+
+// UploadProfilePicture uploads a band profile picture to S3
+func (s *BandService) UploadProfilePicture(ctx context.Context, bandID, userID uuid.UUID, filename string, fileData []byte) (string, error) <span class="cov8" title="1">{
+        if s.s3Client == nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("S3 client not configured")
+        }</span>
+
+        // Check if user is admin of the band
+        <span class="cov8" title="1">isAdmin, err := s.bandRepo.IsAdmin(ctx, bandID, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("failed to check permissions: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if !isAdmin </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("only band admins can update profile picture")
+        }</span>
+
+        // Validate image file
+        <span class="cov8" title="1">if err := s.s3Client.ValidateImageFile(filename, int64(len(fileData))); err != nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("invalid image file: %w", err)
+        }</span>
+
+        // Upload to S3
+        <span class="cov8" title="1">uploadResult, err := s.s3Client.UploadImage(ctx, bandID.String(), filename, bytes.NewReader(fileData), int64(len(fileData)))
+        if err != nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("failed to upload profile picture: %w", err)
+        }</span>
+
+        // Update band profile picture URL
+        <span class="cov8" title="1">band, err := s.bandRepo.GetByID(ctx, bandID)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("band not found: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">band.ProfilePictureURL = &amp;uploadResult.URL
+        if err := s.bandRepo.Update(ctx, band); err != nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("failed to update profile picture URL: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return uploadResult.URL, nil</span>
+}
+
+// GetUserBands gets all bands that a user is a member of
+func (s *BandService) GetUserBands(ctx context.Context, userID uuid.UUID) ([]*models.BandMember, error) <span class="cov8" title="1">{
+        return s.bandRepo.GetUserBands(ctx, userID)
+}</span>
+
+// GetAllBands gets all bands with pagination
+func (s *BandService) GetAllBands(ctx context.Context, limit, offset int) ([]*models.Band, error) <span class="cov8" title="1">{
+        // Default pagination values
+        if limit &lt;= 0 </span><span class="cov8" title="1">{
+                limit = 20
+        }</span>
+        <span class="cov8" title="1">if limit &gt; 100 </span><span class="cov8" title="1">{
+                limit = 100 // Max limit to prevent abuse
+        }</span>
+        <span class="cov8" title="1">if offset &lt; 0 </span><span class="cov8" title="1">{
+                offset = 0
+        }</span>
+
+        <span class="cov8" title="1">return s.bandRepo.GetAll(ctx, limit, offset)</span>
+}
+
+// Adapter structs implement interfaces for existing concrete types
+// This allows us to use the existing repository/cache/s3 with the new interface-based service
+
+// BandRepositoryAdapter adapts repository.BandRepository to BandRepository interface
+type BandRepositoryAdapter struct {
+        repo *repository.BandRepository
+}
+
+func NewBandRepositoryAdapter(repo *repository.BandRepository) BandRepository <span class="cov0" title="0">{
+        return &amp;BandRepositoryAdapter{repo: repo}
+}</span>
+
+func (a *BandRepositoryAdapter) Create(ctx context.Context, band *models.Band) error <span class="cov0" title="0">{
+        return a.repo.Create(ctx, band)
+}</span>
+
+func (a *BandRepositoryAdapter) GetByID(ctx context.Context, id uuid.UUID) (*models.Band, error) <span class="cov0" title="0">{
+        return a.repo.GetByID(ctx, id)
+}</span>
+
+func (a *BandRepositoryAdapter) Update(ctx context.Context, band *models.Band) error <span class="cov0" title="0">{
+        return a.repo.Update(ctx, band)
+}</span>
+
+func (a *BandRepositoryAdapter) Delete(ctx context.Context, id uuid.UUID) error <span class="cov0" title="0">{
+        return a.repo.Delete(ctx, id)
+}</span>
+
+func (a *BandRepositoryAdapter) GetNearby(ctx context.Context, lat, lng float64, radiusKm, limit int) ([]*models.Band, error) <span class="cov0" title="0">{
+        return a.repo.GetNearby(ctx, lat, lng, radiusKm, limit)
+}</span>
+
+func (a *BandRepositoryAdapter) GetUserBands(ctx context.Context, userID uuid.UUID) ([]*models.BandMember, error) <span class="cov0" title="0">{
+        return a.repo.GetUserBands(ctx, userID)
+}</span>
+
+func (a *BandRepositoryAdapter) AddMember(ctx context.Context, bandID, userID uuid.UUID, role string) error <span class="cov0" title="0">{
+        return a.repo.AddMember(ctx, bandID, userID, role)
+}</span>
+
+func (a *BandRepositoryAdapter) RemoveMember(ctx context.Context, bandID, userID uuid.UUID) error <span class="cov0" title="0">{
+        return a.repo.RemoveMember(ctx, bandID, userID)
+}</span>
+
+func (a *BandRepositoryAdapter) GetMembers(ctx context.Context, bandID uuid.UUID) ([]*models.BandMember, error) <span class="cov0" title="0">{
+        return a.repo.GetMembers(ctx, bandID)
+}</span>
+
+func (a *BandRepositoryAdapter) IsMember(ctx context.Context, bandID, userID uuid.UUID) (bool, error) <span class="cov0" title="0">{
+        return a.repo.IsMember(ctx, bandID, userID)
+}</span>
+
+func (a *BandRepositoryAdapter) IsAdmin(ctx context.Context, bandID, userID uuid.UUID) (bool, error) <span class="cov0" title="0">{
+        return a.repo.IsAdmin(ctx, bandID, userID)
+}</span>
+
+func (a *BandRepositoryAdapter) GetAll(ctx context.Context, limit, offset int) ([]*models.Band, error) <span class="cov0" title="0">{
+        return a.repo.GetAll(ctx, limit, offset)
+}</span>
+
+// UserRepositoryForBandAdapter adapts repository.UserRepository to UserRepositoryForBand interface
+type UserRepositoryForBandAdapter struct {
+        repo *repository.UserRepository
+}
+
+func NewUserRepositoryForBandAdapter(repo *repository.UserRepository) UserRepositoryForBand <span class="cov0" title="0">{
+        return &amp;UserRepositoryForBandAdapter{repo: repo}
+}</span>
+
+func (a *UserRepositoryForBandAdapter) GetByID(ctx context.Context, id uuid.UUID) (*models.User, error) <span class="cov0" title="0">{
+        return a.repo.GetByID(ctx, id)
+}</span>
+
+// S3ClientForBandAdapter adapts storage.S3Client to S3ClientForBand interface
+type S3ClientForBandAdapter struct {
+        s3Client *storage.S3Client
+}
+
+func NewS3ClientForBandAdapter(s3Client *storage.S3Client) S3ClientForBand <span class="cov0" title="0">{
+        return &amp;S3ClientForBandAdapter{s3Client: s3Client}
+}</span>
+
+func (a *S3ClientForBandAdapter) ValidateImageFile(filename string, size int64) error <span class="cov0" title="0">{
+        return a.s3Client.ValidateImageFile(filename, size)
+}</span>
+
+func (a *S3ClientForBandAdapter) UploadImage(ctx context.Context, userID, filename string, file io.Reader, size int64) (*storage.UploadResult, error) <span class="cov0" title="0">{
+        return a.s3Client.UploadImage(ctx, userID, filename, file, size)
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package service
+
+import (
+        "context"
+        "fmt"
+
+        "musicapp/internal/cache"
+        "musicapp/internal/models"
+        "musicapp/internal/repository"
+
+        "github.com/google/uuid"
+)
+
+type FollowService struct {
+        followRepo *repository.FollowRepository
+        userRepo   *repository.UserRepository
+        bandRepo   *repository.BandRepository
+        cache      *cache.Cache
+}
+
+func NewFollowService(followRepo *repository.FollowRepository, userRepo *repository.UserRepository, bandRepo *repository.BandRepository, cache *cache.Cache) *FollowService <span class="cov8" title="1">{
+        return &amp;FollowService{
+                followRepo: followRepo,
+                userRepo:   userRepo,
+                bandRepo:   bandRepo,
+                cache:      cache,
+        }
+}</span>
+
+// FollowUser follows a user
+func (s *FollowService) FollowUser(ctx context.Context, followerID, followingUserID uuid.UUID) error <span class="cov0" title="0">{
+        // Check if user is trying to follow themselves
+        if followerID == followingUserID </span><span class="cov0" title="0">{
+                return fmt.Errorf("you cannot follow yourself")
+        }</span>
+
+        // Check if following user exists
+        <span class="cov0" title="0">_, err := s.userRepo.GetByID(ctx, followingUserID)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("user to follow not found: %w", err)
+        }</span>
+
+        // Check if already following
+        <span class="cov0" title="0">isFollowing, err := s.followRepo.IsFollowing(ctx, followerID, "user", &amp;followingUserID, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to check follow status: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if isFollowing </span><span class="cov0" title="0">{
+                return fmt.Errorf("already following this user")
+        }</span>
+
+        // Create follow relationship
+        <span class="cov0" title="0">follow := &amp;models.Follow{
+                FollowerID:      followerID,
+                FollowingType:   "user",
+                FollowingUserID: &amp;followingUserID,
+                FollowingBandID: nil,
+        }
+
+        if err := s.followRepo.Create(ctx, follow); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create follow relationship: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// FollowBand follows a band
+func (s *FollowService) FollowBand(ctx context.Context, followerID, followingBandID uuid.UUID) error <span class="cov0" title="0">{
+        // Check if band exists
+        _, err := s.bandRepo.GetByID(ctx, followingBandID)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("band to follow not found: %w", err)
+        }</span>
+
+        // Check if already following
+        <span class="cov0" title="0">isFollowing, err := s.followRepo.IsFollowing(ctx, followerID, "band", nil, &amp;followingBandID)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to check follow status: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if isFollowing </span><span class="cov0" title="0">{
+                return fmt.Errorf("already following this band")
+        }</span>
+
+        // Create follow relationship
+        <span class="cov0" title="0">follow := &amp;models.Follow{
+                FollowerID:      followerID,
+                FollowingType:   "band",
+                FollowingUserID: nil,
+                FollowingBandID: &amp;followingBandID,
+        }
+
+        if err := s.followRepo.Create(ctx, follow); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create follow relationship: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// UnfollowUser unfollows a user
+func (s *FollowService) UnfollowUser(ctx context.Context, followerID, followingUserID uuid.UUID) error <span class="cov0" title="0">{
+        // Check if currently following
+        isFollowing, err := s.followRepo.IsFollowing(ctx, followerID, "user", &amp;followingUserID, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to check follow status: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if !isFollowing </span><span class="cov0" title="0">{
+                return fmt.Errorf("not following this user")
+        }</span>
+
+        // Delete follow relationship
+        <span class="cov0" title="0">if err := s.followRepo.Delete(ctx, followerID, "user", &amp;followingUserID, nil); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to unfollow: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// UnfollowBand unfollows a band
+func (s *FollowService) UnfollowBand(ctx context.Context, followerID, followingBandID uuid.UUID) error <span class="cov0" title="0">{
+        // Check if currently following
+        isFollowing, err := s.followRepo.IsFollowing(ctx, followerID, "band", nil, &amp;followingBandID)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to check follow status: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if !isFollowing </span><span class="cov0" title="0">{
+                return fmt.Errorf("not following this band")
+        }</span>
+
+        // Delete follow relationship
+        <span class="cov0" title="0">if err := s.followRepo.Delete(ctx, followerID, "band", nil, &amp;followingBandID); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to unfollow: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetFollowers retrieves users who follow the specified user/band
+func (s *FollowService) GetFollowers(ctx context.Context, followingType string, followingUserID, followingBandID *uuid.UUID, limit, offset int) ([]*models.Follow, error) <span class="cov0" title="0">{
+        if limit &lt;= 0 || limit &gt; 100 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid limit: %d (must be 1-100)", limit)
+        }</span>
+        <span class="cov0" title="0">if offset &lt; 0 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid offset: %d (must be &gt;= 0)", offset)
+        }</span>
+
+        <span class="cov0" title="0">followers, err := s.followRepo.GetFollowers(ctx, followingType, followingUserID, followingBandID, limit, offset)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to retrieve followers: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return followers, nil</span>
+}
+
+// GetFollowing retrieves users/bands that the specified user is following
+func (s *FollowService) GetFollowing(ctx context.Context, followerID uuid.UUID, limit, offset int) ([]*models.Follow, error) <span class="cov0" title="0">{
+        if limit &lt;= 0 || limit &gt; 100 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid limit: %d (must be 1-100)", limit)
+        }</span>
+        <span class="cov0" title="0">if offset &lt; 0 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid offset: %d (must be &gt;= 0)", offset)
+        }</span>
+
+        <span class="cov0" title="0">following, err := s.followRepo.GetFollowing(ctx, followerID, limit, offset)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to retrieve following: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return following, nil</span>
+}
+
+// IsFollowing checks if a user is following another user or band
+func (s *FollowService) IsFollowing(ctx context.Context, followerID uuid.UUID, followingType string, followingUserID, followingBandID *uuid.UUID) (bool, error) <span class="cov0" title="0">{
+        isFollowing, err := s.followRepo.IsFollowing(ctx, followerID, followingType, followingUserID, followingBandID)
+        if err != nil </span><span class="cov0" title="0">{
+                return false, fmt.Errorf("failed to check follow status: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return isFollowing, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package service
+
+import (
+        "bytes"
+        "context"
+        "fmt"
+        "io"
+
+        "musicapp/internal/models"
+        "musicapp/internal/repository"
+        "musicapp/internal/storage"
+
+        "github.com/google/uuid"
+)
+
+// PostRepository interface for post data operations
+type PostRepository interface {
+        Create(ctx context.Context, post *models.Post) error
+        GetByID(ctx context.Context, id uuid.UUID) (*models.Post, error)
+        GetByUserID(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.Post, error)
+        GetByBandID(ctx context.Context, bandID uuid.UUID, limit, offset int) ([]*models.Post, error)
+        GetFeed(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.Post, error)
+        Update(ctx context.Context, post *models.Post) error
+        Delete(ctx context.Context, id uuid.UUID) error
+        LikePost(ctx context.Context, userID, postID uuid.UUID) error
+        UnlikePost(ctx context.Context, userID, postID uuid.UUID) error
+        Repost(ctx context.Context, userID, postID uuid.UUID) error
+        IsLiked(ctx context.Context, userID, postID uuid.UUID) (bool, error)
+        IsReposted(ctx context.Context, userID, postID uuid.UUID) (bool, error)
+        GetAll(ctx context.Context, limit, offset int) ([]*models.Post, error)
+}
+
+// UserRepositoryForPost interface for user operations needed by PostService
+type UserRepositoryForPost interface {
+        GetByID(ctx context.Context, id uuid.UUID) (*models.User, error)
+}
+
+// BandRepositoryForPost interface for band operations needed by PostService
+type BandRepositoryForPost interface {
+        GetByID(ctx context.Context, id uuid.UUID) (*models.Band, error)
+}
+
+// S3ClientForPost interface for S3 operations needed by PostService
+type S3ClientForPost interface {
+        ValidateImageFile(filename string, size int64) error
+        ValidateAudioFile(filename string, size int64) error
+        UploadImage(ctx context.Context, userID, filename string, file io.Reader, size int64) (*storage.UploadResult, error)
+        UploadAudio(ctx context.Context, userID, filename string, file io.Reader, size int64) (*storage.UploadResult, error)
+}
+
+type PostService struct {
+        postRepo PostRepository
+        userRepo UserRepositoryForPost
+        bandRepo BandRepositoryForPost
+        cache    Cache
+        s3Client S3ClientForPost
+}
+
+func NewPostService(postRepo PostRepository, userRepo UserRepositoryForPost, bandRepo BandRepositoryForPost, cache Cache, s3Client S3ClientForPost) *PostService <span class="cov8" title="1">{
+        return &amp;PostService{
+                postRepo: postRepo,
+                userRepo: userRepo,
+                bandRepo: bandRepo,
+                cache:    cache,
+                s3Client: s3Client,
+        }
+}</span>
+
+// CreatePost creates a new post
+func (s *PostService) CreatePost(ctx context.Context, userID uuid.UUID, req *models.CreatePostRequest) (*models.Post, error) <span class="cov8" title="1">{
+        if req.Content == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("post content is required")
+        }</span>
+
+        <span class="cov8" title="1">if len(req.Content) &gt; 2000 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("post content too long (max 2000 characters)")
+        }</span>
+
+        // Create post
+        <span class="cov8" title="1">post := &amp;models.Post{
+                ID:         uuid.New(),
+                AuthorID:   &amp;userID,
+                AuthorType: "user",
+                UserID:     &amp;userID,
+                Content:    req.Content,
+                MediaURLs:  req.MediaURLs,
+                MediaTypes: req.MediaTypes,
+        }
+
+        if err := s.postRepo.Create(ctx, post); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to create post: %w", err)
+        }</span>
+
+        // Get the created post with counts
+        <span class="cov8" title="1">createdPost, err := s.postRepo.GetByID(ctx, post.ID)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to retrieve created post: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return createdPost, nil</span>
+}
+
+// GetPost retrieves a post by ID
+func (s *PostService) GetPost(ctx context.Context, postID uuid.UUID, currentUserID *uuid.UUID) (*models.Post, error) <span class="cov8" title="1">{
+        post, err := s.postRepo.GetByID(ctx, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("post not found: %w", err)
+        }</span>
+
+        // Check if current user has liked/reposted this post
+        <span class="cov8" title="1">if currentUserID != nil </span><span class="cov8" title="1">{
+                isLiked, _ := s.postRepo.IsLiked(ctx, *currentUserID, postID)
+                isReposted, _ := s.postRepo.IsReposted(ctx, *currentUserID, postID)
+
+                post.IsLiked = isLiked
+                post.IsReposted = isReposted
+        }</span>
+
+        <span class="cov8" title="1">return post, nil</span>
+}
+
+// UpdatePost updates a post
+func (s *PostService) UpdatePost(ctx context.Context, postID, userID uuid.UUID, req *models.UpdatePostRequest) (*models.Post, error) <span class="cov8" title="1">{
+        // Get existing post
+        post, err := s.postRepo.GetByID(ctx, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("post not found: %w", err)
+        }</span>
+
+        // Check if user is the author
+        <span class="cov8" title="1">if post.UserID == nil || *post.UserID != userID </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("you can only update your own posts")
+        }</span>
+
+        // Update fields
+        <span class="cov8" title="1">if req.Content != nil </span><span class="cov8" title="1">{
+                if *req.Content == "" </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("post content cannot be empty")
+                }</span>
+                <span class="cov8" title="1">if len(*req.Content) &gt; 2000 </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("post content too long (max 2000 characters)")
+                }</span>
+                <span class="cov8" title="1">post.Content = *req.Content</span>
+        }
+        <span class="cov8" title="1">if req.MediaURLs != nil </span><span class="cov0" title="0">{
+                post.MediaURLs = req.MediaURLs
+        }</span>
+        <span class="cov8" title="1">if req.MediaTypes != nil </span><span class="cov0" title="0">{
+                post.MediaTypes = req.MediaTypes
+        }</span>
+
+        <span class="cov8" title="1">if err := s.postRepo.Update(ctx, post); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to update post: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return post, nil</span>
+}
+
+// DeletePost deletes a post
+func (s *PostService) DeletePost(ctx context.Context, postID, userID uuid.UUID) error <span class="cov8" title="1">{
+        // Get existing post
+        post, err := s.postRepo.GetByID(ctx, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("post not found: %w", err)
+        }</span>
+
+        // Check if user is the author
+        <span class="cov8" title="1">if post.UserID == nil || *post.UserID != userID </span><span class="cov8" title="1">{
+                return fmt.Errorf("you can only delete your own posts")
+        }</span>
+
+        <span class="cov8" title="1">if err := s.postRepo.Delete(ctx, postID); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to delete post: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// LikePost likes a post
+func (s *PostService) LikePost(ctx context.Context, userID, postID uuid.UUID) error <span class="cov8" title="1">{
+        // Check if post exists
+        _, err := s.postRepo.GetByID(ctx, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("post not found: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if err := s.postRepo.LikePost(ctx, userID, postID); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to like post: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// UnlikePost unlikes a post
+func (s *PostService) UnlikePost(ctx context.Context, userID, postID uuid.UUID) error <span class="cov8" title="1">{
+        if err := s.postRepo.UnlikePost(ctx, userID, postID); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to unlike post: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// Repost reposts a post
+func (s *PostService) Repost(ctx context.Context, userID, postID uuid.UUID) error <span class="cov8" title="1">{
+        // Check if post exists
+        _, err := s.postRepo.GetByID(ctx, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("post not found: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if err := s.postRepo.Repost(ctx, userID, postID); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to repost: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+// GetFeed retrieves personalized feed for a user
+func (s *PostService) GetFeed(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.Post, error) <span class="cov8" title="1">{
+        if limit &lt;= 0 || limit &gt; 100 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid limit: %d (must be 1-100)", limit)
+        }</span>
+        <span class="cov8" title="1">if offset &lt; 0 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid offset: %d (must be &gt;= 0)", offset)
+        }</span>
+
+        <span class="cov8" title="1">posts, err := s.postRepo.GetFeed(ctx, userID, limit, offset)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to retrieve feed: %w", err)
+        }</span>
+
+        // Add like/repost status for current user
+        <span class="cov8" title="1">for _, post := range posts </span><span class="cov8" title="1">{
+                isLiked, _ := s.postRepo.IsLiked(ctx, userID, post.ID)
+                isReposted, _ := s.postRepo.IsReposted(ctx, userID, post.ID)
+
+                post.IsLiked = isLiked
+                post.IsReposted = isReposted
+        }</span>
+
+        <span class="cov8" title="1">return posts, nil</span>
+}
+
+// GetExploreFeed retrieves explore/trending posts
+func (s *PostService) GetExploreFeed(ctx context.Context, limit, offset int) ([]*models.Post, error) <span class="cov8" title="1">{
+        if limit &lt;= 0 || limit &gt; 100 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid limit: %d (must be 1-100)", limit)
+        }</span>
+        <span class="cov8" title="1">if offset &lt; 0 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid offset: %d (must be &gt;= 0)", offset)
+        }</span>
+
+        // Use empty UUID for explore feed
+        <span class="cov8" title="1">posts, err := s.postRepo.GetFeed(ctx, uuid.Nil, limit, offset)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to retrieve explore feed: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return posts, nil</span>
+}
+
+// UploadMedia uploads media files to a post
+func (s *PostService) UploadMedia(ctx context.Context, postID, userID uuid.UUID, filename string, fileData []byte, contentType string) (string, string, error) <span class="cov8" title="1">{
+        if s.s3Client == nil </span><span class="cov8" title="1">{
+                return "", "", fmt.Errorf("S3 client not configured")
+        }</span>
+
+        // Get existing post
+        <span class="cov8" title="1">post, err := s.postRepo.GetByID(ctx, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return "", "", fmt.Errorf("post not found: %w", err)
+        }</span>
+
+        // Check if user is the author
+        <span class="cov8" title="1">if post.UserID == nil || *post.UserID != userID </span><span class="cov8" title="1">{
+                return "", "", fmt.Errorf("you can only add media to your own posts")
+        }</span>
+
+        <span class="cov8" title="1">var mediaType string
+        var uploadResult *storage.UploadResult
+
+        // Determine media type and upload
+        if contentType == "image" </span><span class="cov8" title="1">{
+                mediaType = "image"
+                if err := s.s3Client.ValidateImageFile(filename, int64(len(fileData))); err != nil </span><span class="cov8" title="1">{
+                        return "", "", fmt.Errorf("invalid image file: %w", err)
+                }</span>
+                <span class="cov8" title="1">uploadResult, err = s.s3Client.UploadImage(ctx, userID.String(), filename, bytes.NewReader(fileData), int64(len(fileData)))</span>
+        } else<span class="cov8" title="1"> if contentType == "audio" </span><span class="cov8" title="1">{
+                mediaType = "audio"
+                if err := s.s3Client.ValidateAudioFile(filename, int64(len(fileData))); err != nil </span><span class="cov0" title="0">{
+                        return "", "", fmt.Errorf("invalid audio file: %w", err)
+                }</span>
+                <span class="cov8" title="1">uploadResult, err = s.s3Client.UploadAudio(ctx, userID.String(), filename, bytes.NewReader(fileData), int64(len(fileData)))</span>
+        } else<span class="cov8" title="1"> {
+                return "", "", fmt.Errorf("unsupported media type: %s", contentType)
+        }</span>
+
+        <span class="cov8" title="1">if err != nil </span><span class="cov8" title="1">{
+                return "", "", fmt.Errorf("failed to upload media: %w", err)
+        }</span>
+
+        // Update post with new media
+        <span class="cov8" title="1">post.MediaURLs = append(post.MediaURLs, uploadResult.URL)
+        post.MediaTypes = append(post.MediaTypes, mediaType)
+
+        if err := s.postRepo.Update(ctx, post); err != nil </span><span class="cov8" title="1">{
+                return "", "", fmt.Errorf("failed to update post with media: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return uploadResult.URL, mediaType, nil</span>
+}
+
+// GetAllPosts gets all posts with pagination
+func (s *PostService) GetAllPosts(ctx context.Context, limit, offset int) ([]*models.Post, error) <span class="cov8" title="1">{
+        // Default pagination values
+        if limit &lt;= 0 </span><span class="cov8" title="1">{
+                limit = 20
+        }</span>
+        <span class="cov8" title="1">if limit &gt; 100 </span><span class="cov8" title="1">{
+                limit = 100 // Max limit to prevent abuse
+        }</span>
+        <span class="cov8" title="1">if offset &lt; 0 </span><span class="cov8" title="1">{
+                offset = 0
+        }</span>
+
+        <span class="cov8" title="1">return s.postRepo.GetAll(ctx, limit, offset)</span>
+}
+
+// Adapter structs to bridge existing concrete types with new interfaces
+
+// PostRepositoryAdapter adapts *repository.PostRepository to PostRepository interface
+type PostRepositoryAdapter struct {
+        *repository.PostRepository
+}
+
+func NewPostRepositoryAdapter(repo *repository.PostRepository) PostRepository <span class="cov0" title="0">{
+        return &amp;PostRepositoryAdapter{repo}
+}</span>
+
+// UserRepositoryForPostAdapter adapts *repository.UserRepository to UserRepositoryForPost interface
+type UserRepositoryForPostAdapter struct {
+        *repository.UserRepository
+}
+
+func NewUserRepositoryForPostAdapter(repo *repository.UserRepository) UserRepositoryForPost <span class="cov0" title="0">{
+        return &amp;UserRepositoryForPostAdapter{repo}
+}</span>
+
+// BandRepositoryForPostAdapter adapts *repository.BandRepository to BandRepositoryForPost interface
+type BandRepositoryForPostAdapter struct {
+        *repository.BandRepository
+}
+
+func NewBandRepositoryForPostAdapter(repo *repository.BandRepository) BandRepositoryForPost <span class="cov0" title="0">{
+        return &amp;BandRepositoryForPostAdapter{repo}
+}</span>
+
+// S3ClientForPostAdapter adapts *storage.S3Client to S3ClientForPost interface
+type S3ClientForPostAdapter struct {
+        *storage.S3Client
+}
+
+func NewS3ClientForPostAdapter(client *storage.S3Client) S3ClientForPost <span class="cov0" title="0">{
+        return &amp;S3ClientForPostAdapter{client}
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package service
+
+import (
+        "bytes"
+        "context"
+        "fmt"
+        "io"
+
+        "musicapp/internal/models"
+        "musicapp/internal/repository"
+        "musicapp/internal/storage"
+        "musicapp/pkg/utils"
+
+        "github.com/google/uuid"
+)
+
+// Extended interfaces for UserService (building on existing interfaces from auth.go)
+type UserRepositoryExtended interface {
+        UserRepository
+        Update(ctx context.Context, user *models.User) error
+        GetNearby(ctx context.Context, lat, lng float64, radiusKm, limit int) ([]*models.User, error)
+        GetFollowers(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.User, error)
+        GetFollowing(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.User, error)
+        GetAll(ctx context.Context, limit, offset int) ([]*models.User, error)
+}
+
+type S3Client interface {
+        ValidateImageFile(filename string, size int64) error
+        UploadImage(ctx context.Context, userID, filename string, file io.Reader, size int64) (*storage.UploadResult, error)
+}
+
+// UserService now depends on interfaces, not concrete types
+// This makes it much easier to test and more flexible
+type UserService struct {
+        userRepo UserRepositoryExtended
+        cache    Cache
+        s3Client S3Client
+}
+
+// NewUserService creates a new UserService with dependency injection
+// This follows the dependency injection pattern for better testability
+func NewUserService(userRepo UserRepositoryExtended, cache Cache, s3Client S3Client) *UserService <span class="cov8" title="1">{
+        return &amp;UserService{
+                userRepo: userRepo,
+                cache:    cache,
+                s3Client: s3Client,
+        }
+}</span>
+
+// CreateUser creates a new user with hashed password
+func (s *UserService) CreateUser(ctx context.Context, req *models.CreateUserRequest) (*models.User, error) <span class="cov8" title="1">{
+        // Check if user already exists
+        existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
+        if err == nil &amp;&amp; existingUser != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("user with email %s already exists", req.Email)
+        }</span>
+
+        <span class="cov8" title="1">existingUser, err = s.userRepo.GetByUsername(ctx, req.Username)
+        if err == nil &amp;&amp; existingUser != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("username %s already taken", req.Username)
+        }</span>
+
+        // Hash password
+        <span class="cov8" title="1">hashedPassword, err := utils.HashPassword(req.Password)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to hash password: %w", err)
+        }</span>
+
+        // Create user
+        <span class="cov8" title="1">user := &amp;models.User{
+                ID:           uuid.New(),
+                Username:     req.Username,
+                Email:        req.Email,
+                PasswordHash: hashedPassword,
+                Location:     req.Location,
+                City:         req.City,
+                Country:      req.Country,
+        }
+
+        if err := s.userRepo.Create(ctx, user); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to create user: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return user, nil</span>
+}
+
+// GetUser retrieves a user by ID
+func (s *UserService) GetUser(ctx context.Context, userID uuid.UUID) (*models.User, error) <span class="cov8" title="1">{
+        user, err := s.userRepo.GetByID(ctx, userID)
+        if err != nil || user == nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("user not found: %w", err)
+        }</span>
+        <span class="cov8" title="1">return user, nil</span>
+}
+
+// UpdateUser updates user profile
+func (s *UserService) UpdateUser(ctx context.Context, userID uuid.UUID, req *models.UpdateUserRequest) (*models.User, error) <span class="cov8" title="1">{
+        // Get existing user
+        user, err := s.userRepo.GetByID(ctx, userID)
+        if err != nil || user == nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("user not found: %w", err)
+        }</span>
+
+        // Update fields
+        <span class="cov8" title="1">if req.DisplayName != nil </span><span class="cov8" title="1">{
+                user.DisplayName = req.DisplayName
+        }</span>
+        <span class="cov8" title="1">if req.Bio != nil </span><span class="cov8" title="1">{
+                user.Bio = req.Bio
+        }</span>
+        <span class="cov8" title="1">if req.Location != nil </span><span class="cov8" title="1">{
+                user.Location = req.Location
+        }</span>
+        <span class="cov8" title="1">if req.City != nil </span><span class="cov8" title="1">{
+                user.City = req.City
+        }</span>
+        <span class="cov8" title="1">if req.Country != nil </span><span class="cov8" title="1">{
+                user.Country = req.Country
+        }</span>
+        <span class="cov8" title="1">if req.Genres != nil </span><span class="cov8" title="1">{
+                user.Genres = req.Genres
+        }</span>
+        <span class="cov8" title="1">if req.Skills != nil </span><span class="cov8" title="1">{
+                user.Skills = req.Skills
+        }</span>
+        <span class="cov8" title="1">if req.SpotifyURL != nil </span><span class="cov8" title="1">{
+                user.SpotifyURL = req.SpotifyURL
+        }</span>
+        <span class="cov8" title="1">if req.SoundcloudURL != nil </span><span class="cov8" title="1">{
+                user.SoundcloudURL = req.SoundcloudURL
+        }</span>
+        <span class="cov8" title="1">if req.InstagramHandle != nil </span><span class="cov8" title="1">{
+                user.InstagramHandle = req.InstagramHandle
+        }</span>
+
+        <span class="cov8" title="1">if err := s.userRepo.Update(ctx, user); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to update user: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return user, nil</span>
+}
+
+// GetNearbyUsers finds users within a specified radius
+func (s *UserService) GetNearbyUsers(ctx context.Context, lat, lng float64, radiusKm, limit int) ([]*models.User, error) <span class="cov8" title="1">{
+        if lat &lt; -90 || lat &gt; 90 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid latitude: %f", lat)
+        }</span>
+        <span class="cov8" title="1">if lng &lt; -180 || lng &gt; 180 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid longitude: %f", lng)
+        }</span>
+        <span class="cov8" title="1">if radiusKm &lt;= 0 || radiusKm &gt; 500 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid radius: %d km (must be 1-500)", radiusKm)
+        }</span>
+        <span class="cov8" title="1">if limit &lt;= 0 || limit &gt; 100 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid limit: %d (must be 1-100)", limit)
+        }</span>
+
+        <span class="cov8" title="1">users, err := s.userRepo.GetNearby(ctx, lat, lng, radiusKm, limit)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to get nearby users: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return users, nil</span>
+}
+
+// GetUserPosts retrieves posts by a specific user
+func (s *UserService) GetUserPosts(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.Post, error) <span class="cov8" title="1">{
+        if limit &lt;= 0 || limit &gt; 100 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid limit: %d (must be 1-100)", limit)
+        }</span>
+        <span class="cov8" title="1">if offset &lt; 0 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid offset: %d (must be &gt;= 0)", offset)
+        }</span>
+
+        // This would need to be implemented in the repository
+        // For now, return empty slice
+        <span class="cov8" title="1">return []*models.Post{}, nil</span>
+}
+
+// GetFollowers retrieves users who follow the specified user
+func (s *UserService) GetFollowers(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.User, error) <span class="cov8" title="1">{
+        if limit &lt;= 0 || limit &gt; 100 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid limit: %d (must be 1-100)", limit)
+        }</span>
+        <span class="cov8" title="1">if offset &lt; 0 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid offset: %d (must be &gt;= 0)", offset)
+        }</span>
+
+        <span class="cov8" title="1">followers, err := s.userRepo.GetFollowers(ctx, userID, limit, offset)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to get followers: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return followers, nil</span>
+}
+
+// GetFollowing retrieves users that the specified user is following
+func (s *UserService) GetFollowing(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.User, error) <span class="cov8" title="1">{
+        if limit &lt;= 0 || limit &gt; 100 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid limit: %d (must be 1-100)", limit)
+        }</span>
+        <span class="cov8" title="1">if offset &lt; 0 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid offset: %d (must be &gt;= 0)", offset)
+        }</span>
+
+        <span class="cov8" title="1">following, err := s.userRepo.GetFollowing(ctx, userID, limit, offset)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to get following: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return following, nil</span>
+}
+
+// UploadProfilePicture uploads a profile picture to S3
+func (s *UserService) UploadProfilePicture(ctx context.Context, userID uuid.UUID, filename string, fileData []byte) (string, error) <span class="cov8" title="1">{
+        if s.s3Client == nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("S3 client not configured")
+        }</span>
+
+        // Debug logging
+        <span class="cov8" title="1">fmt.Printf("DEBUG: Uploading file %s, size: %d bytes, userID: %s\n", filename, len(fileData), userID.String())
+
+        // Validate image file
+        if err := s.s3Client.ValidateImageFile(filename, int64(len(fileData))); err != nil </span><span class="cov8" title="1">{
+                fmt.Printf("DEBUG: Validation failed: %v\n", err)
+                return "", fmt.Errorf("invalid image file: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">fmt.Printf("DEBUG: Validation passed, attempting S3 upload...\n")
+
+        // Upload to S3
+        uploadResult, err := s.s3Client.UploadImage(ctx, userID.String(), filename, bytes.NewReader(fileData), int64(len(fileData)))
+        if err != nil </span><span class="cov8" title="1">{
+                fmt.Printf("DEBUG: S3 upload failed: %v\n", err)
+                return "", fmt.Errorf("failed to upload profile picture: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">fmt.Printf("DEBUG: S3 upload successful, URL: %s\n", uploadResult.URL)
+
+        // Update user profile picture URL
+        user, err := s.userRepo.GetByID(ctx, userID)
+        if err != nil || user == nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("user not found: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">user.ProfilePictureURL = &amp;uploadResult.URL
+        if err := s.userRepo.Update(ctx, user); err != nil </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("failed to update profile picture URL: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return uploadResult.URL, nil</span>
+}
+
+// GetUserBands gets all bands that a user is a member of
+func (s *UserService) GetUserBands(ctx context.Context, userID uuid.UUID) ([]*models.BandMember, error) <span class="cov8" title="1">{
+        // This would need to be implemented in the user service
+        // For now, we'll delegate to the band service
+        // In a real implementation, you might want to add this to the user repository
+        return nil, fmt.Errorf("not implemented - use band service instead")
+}</span>
+
+// GetAllUsers gets all users with pagination
+func (s *UserService) GetAllUsers(ctx context.Context, limit, offset int) ([]*models.User, error) <span class="cov8" title="1">{
+        // Default pagination values
+        if limit &lt;= 0 </span><span class="cov8" title="1">{
+                limit = 20
+        }</span>
+        <span class="cov8" title="1">if limit &gt; 100 </span><span class="cov8" title="1">{
+                limit = 100 // Max limit to prevent abuse
+        }</span>
+        <span class="cov8" title="1">if offset &lt; 0 </span><span class="cov8" title="1">{
+                offset = 0
+        }</span>
+
+        <span class="cov8" title="1">return s.userRepo.GetAll(ctx, limit, offset)</span>
+}
+
+// Extended adapter for UserService (building on existing adapters from auth.go)
+type UserRepositoryExtendedAdapter struct {
+        *UserRepositoryAdapter
+}
+
+func NewUserRepositoryExtendedAdapter(repo *repository.UserRepository) UserRepositoryExtended <span class="cov0" title="0">{
+        baseAdapter := NewUserRepositoryAdapter(repo)
+        return &amp;UserRepositoryExtendedAdapter{
+                UserRepositoryAdapter: baseAdapter.(*UserRepositoryAdapter),
+        }
+}</span>
+
+func (a *UserRepositoryExtendedAdapter) Update(ctx context.Context, user *models.User) error <span class="cov0" title="0">{
+        return a.repo.Update(ctx, user)
+}</span>
+
+func (a *UserRepositoryExtendedAdapter) GetNearby(ctx context.Context, lat, lng float64, radiusKm, limit int) ([]*models.User, error) <span class="cov0" title="0">{
+        return a.repo.GetNearby(ctx, lat, lng, radiusKm, limit)
+}</span>
+
+func (a *UserRepositoryExtendedAdapter) GetFollowers(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.User, error) <span class="cov0" title="0">{
+        return a.repo.GetFollowers(ctx, userID, limit, offset)
+}</span>
+
+func (a *UserRepositoryExtendedAdapter) GetFollowing(ctx context.Context, userID uuid.UUID, limit, offset int) ([]*models.User, error) <span class="cov0" title="0">{
+        return a.repo.GetFollowing(ctx, userID, limit, offset)
+}</span>
+
+func (a *UserRepositoryExtendedAdapter) GetAll(ctx context.Context, limit, offset int) ([]*models.User, error) <span class="cov0" title="0">{
+        return a.repo.GetAll(ctx, limit, offset)
+}</span>
+
+// S3ClientAdapter adapts storage.S3Client to S3Client interface
+type S3ClientAdapter struct {
+        s3Client *storage.S3Client
+}
+
+func NewS3ClientAdapter(s3Client *storage.S3Client) S3Client <span class="cov0" title="0">{
+        return &amp;S3ClientAdapter{s3Client: s3Client}
+}</span>
+
+func (a *S3ClientAdapter) ValidateImageFile(filename string, size int64) error <span class="cov0" title="0">{
+        return a.s3Client.ValidateImageFile(filename, size)
+}</span>
+
+func (a *S3ClientAdapter) UploadImage(ctx context.Context, userID, filename string, file io.Reader, size int64) (*storage.UploadResult, error) <span class="cov0" title="0">{
+        return a.s3Client.UploadImage(ctx, userID, filename, file, size)
+}</span>
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package utils
+
+import (
+        "golang.org/x/crypto/bcrypt"
+)
+
+// HashPassword hashes a password using bcrypt
+func HashPassword(password string) (string, error) <span class="cov8" title="1">{
+        bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+        return string(bytes), err
+}</span>
+
+// CheckPasswordHash compares a password with a hash
+func CheckPasswordHash(password, hash string) bool <span class="cov8" title="1">{
+        err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+        return err == nil
+}</span>
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package utils
+
+import (
+        "encoding/json"
+        "net/http"
+)
+
+type APIResponse struct {
+        Success bool        `json:"success"`
+        Message string      `json:"message,omitempty"`
+        Data    interface{} `json:"data,omitempty"`
+        Error   string      `json:"error,omitempty"`
+}
+
+func WriteJSON(w http.ResponseWriter, status int, data interface{}) <span class="cov8" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(status)
+        json.NewEncoder(w).Encode(data)
+}</span>
+
+func WriteSuccess(w http.ResponseWriter, message string, data interface{}) <span class="cov8" title="1">{
+        response := APIResponse{
+                Success: true,
+                Message: message,
+                Data:    data,
+        }
+        WriteJSON(w, http.StatusOK, response)
+}</span>
+
+func WriteError(w http.ResponseWriter, status int, message string) <span class="cov8" title="1">{
+        response := APIResponse{
+                Success: false,
+                Error:   message,
+        }
+        WriteJSON(w, status, response)
+}</span>
+
+func WriteCreated(w http.ResponseWriter, message string, data interface{}) <span class="cov8" title="1">{
+        response := APIResponse{
+                Success: true,
+                Message: message,
+                Data:    data,
+        }
+        WriteJSON(w, http.StatusCreated, response)
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

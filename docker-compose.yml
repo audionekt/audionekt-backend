@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgis/postgis:15-3.3
+    platform: linux/amd64
+    container_name: musicapp_postgres
+    environment:
+      POSTGRES_DB: musicapp
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d musicapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    platform: linux/arm64
+    container_name: musicapp_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: musicapp_api
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://dev:devpassword@postgres:5432/musicapp?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      S3_CDN_URL: ${S3_CDN_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  seeder:
+    build: .
+    container_name: musicapp_seeder
+    environment:
+      DATABASE_URL: postgres://dev:devpassword@postgres:5432/musicapp?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["./seeder"]
+    profiles:
+      - seeder
+
+volumes:
+  postgres_data:
+  redis_data:
