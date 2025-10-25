@@ -1,4 +1,4 @@
-# Music Producer Social Network - Backend API
+# (WIP) Music Producer Social Network - Backend API
 
 A social media platform for music producers to connect, collaborate, and discover nearby talent through location-based matching.
 
